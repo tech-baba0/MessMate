@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: MessMate
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/messmate}
+
+jwt:
+  secret: ${JWT_SECRET:8z!l@2X#v9K&qP5$mN4*bA!wE0^yT7(r}
+  expirationMs: 86400000 # 24 hours

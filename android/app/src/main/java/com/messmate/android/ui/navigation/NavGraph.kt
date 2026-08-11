@@ -1,0 +1,64 @@
+package com.messmate.android.ui.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.messmate.android.ui.screens.auth.LoginScreen
+import com.messmate.android.ui.screens.auth.RegisterScreen
+import com.messmate.android.ui.screens.dashboard.DashboardScreen
+import com.messmate.android.ui.screens.meal.MealSelectionScreen
+import com.messmate.android.ui.screens.bazar.BazarExpenseScreen
+
+@Composable
+fun MessMateNavGraph(
+    navController: NavHostController = rememberNavController(),
+    startDestination: String = Screen.Login.route
+) {
+    NavHost(
+        navController = navController,
+        startDestination = startDestination
+    ) {
+        composable(Screen.Login.route) {
+            LoginScreen(
+                onNavigateToDashboard = {
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onNavigateToRegister = {
+                    navController.navigate(Screen.Register.route)
+                }
+            )
+        }
+        composable(Screen.Register.route) {
+            RegisterScreen(
+                onRegisterSuccess = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Register.route) { inclusive = true }
+                    }
+                },
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable(Screen.Dashboard.route) {
+            DashboardScreen(
+                onNavigateToMeal = { navController.navigate(Screen.MealSelection.route) },
+                onNavigateToBazar = { navController.navigate(Screen.BazarExpense.route) }
+            )
+        }
+        composable(Screen.MealSelection.route) {
+            MealSelectionScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.BazarExpense.route) {
+            BazarExpenseScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+    }
+}
