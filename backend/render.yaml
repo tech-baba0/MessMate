@@ -2,6 +2,7 @@ services:
   - type: web
     name: messmate-backend
     env: docker
+    rootDir: backend
     plan: free
     healthCheckPath: /
     envVars:
