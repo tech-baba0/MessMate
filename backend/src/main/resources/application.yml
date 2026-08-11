@@ -1,9 +1,12 @@
+server:
+  port: ${PORT:8080}
+
 spring:
   application:
     name: MessMate
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/messmate}
+      uri: mongodb+srv://techbaba0026_db_user:DJF6GvkGcXUNO43j@messmatedata.exdhldv.mongodb.net/?appName=MessMateData
 
 jwt:
   secret: ${JWT_SECRET:8z!l@2X#v9K&qP5$mN4*bA!wE0^yT7(r}
