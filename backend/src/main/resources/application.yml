@@ -2,6 +2,10 @@ server:
   port: 10000
 
 spring:
+  main:
+    lazy-initialization: true
+  jmx:
+    enabled: false
   application:
     name: MessMate
   data:
