@@ -10,8 +10,8 @@ spring:
     name: MessMate
   data:
     mongodb:
-      uri: mongodb+srv://techbaba0026_db_user:DJF6GvkGcXUNO43j@messmatedata.exdhldv.mongodb.net/?appName=MessMateData
-
+      uri: ${MONGODB_URI:mongodb+srv://techbaba0026_db_user:DJF6GvkGcXUNO43j@messmatedata.exdhldv.mongodb.net/messmate?appName=MessMateData}
+      auto-index-creation: true
 jwt:
   secret: ${JWT_SECRET:8z!l@2X#v9K&qP5$mN4*bA!wE0^yT7(r}
   expirationMs: 86400000 # 24 hours
