@@ -25,7 +25,7 @@ class AdminViewModel : ViewModel() {
     }
 
     fun fetchMembers() {
-        val messId = MessRepository.currentMessId ?: return
+        val messId = MessRepository.currentMessId.value ?: return
         viewModelScope.launch {
             _state.value = AdminState.Loading
             try {
@@ -38,7 +38,7 @@ class AdminViewModel : ViewModel() {
     }
 
     fun approveMember(memberId: String) {
-        val messId = MessRepository.currentMessId ?: return
+        val messId = MessRepository.currentMessId.value ?: return
         viewModelScope.launch {
             try {
                 ApiClient.apiService.approveMember(messId, memberId)
@@ -50,7 +50,7 @@ class AdminViewModel : ViewModel() {
     }
 
     fun rejectMember(memberId: String) {
-        val messId = MessRepository.currentMessId ?: return
+        val messId = MessRepository.currentMessId.value ?: return
         viewModelScope.launch {
             try {
                 ApiClient.apiService.rejectMember(messId, memberId)
@@ -62,7 +62,7 @@ class AdminViewModel : ViewModel() {
     }
 
     fun changeRole(memberId: String, newRole: String) {
-        val messId = MessRepository.currentMessId ?: return
+        val messId = MessRepository.currentMessId.value ?: return
         viewModelScope.launch {
             try {
                 ApiClient.apiService.changeMemberRole(messId, memberId, newRole)

@@ -2,6 +2,7 @@ package com.messmate.android.ui.screens.dashboard
 
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -31,6 +32,7 @@ fun DashboardScreen(
     onNavigateToMeal: () -> Unit,
     onNavigateToBazar: () -> Unit,
     onNavigateToAdmin: () -> Unit,
+    onNavigateToMenu: () -> Unit,
     viewModel: DashboardViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -194,6 +196,14 @@ fun DashboardScreen(
                         onNavigateToMeal()
                     }
                     ActionCard(
+                        title = "Menu",
+                        icon = Icons.Default.RestaurantMenu,
+                        color = Color(0xFF8B5CF6),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        onNavigateToMenu()
+                    }
+                    ActionCard(
                         title = "Bazar",
                         icon = Icons.Default.ShoppingCart,
                         color = Color(0xFFF59E0B),
@@ -220,6 +230,19 @@ fun DashboardScreen(
                             onNavigateToAdmin()
                         }
                     }
+                }
+
+                val todayMenuState = viewModel.todayMenu.collectAsState().value
+                if (todayMenuState != null) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(
+                        text = "Today's Menu",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(horizontal = 20.dp, bottom = 8.dp)
+                    )
+                    TodayMenuCard(menu = todayMenuState)
                 }
             }
         }
@@ -273,6 +296,30 @@ fun ActionCard(
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onSurface
             )
+        }
+    }
+}
+
+@Composable
+fun TodayMenuCard(menu: com.messmate.android.data.menu.Menu) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .padding(bottom = 20.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            if (menu.lunchItems != null && menu.lunchItems.isNotEmpty()) {
+                Text("Lunch", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text(menu.lunchItems.joinToString(", "), color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f))
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+            if (menu.dinnerItems != null && menu.dinnerItems.isNotEmpty()) {
+                Text("Dinner", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text(menu.dinnerItems.joinToString(", "), color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f))
+            }
         }
     }
 }

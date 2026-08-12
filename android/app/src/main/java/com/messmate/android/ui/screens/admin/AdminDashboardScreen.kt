@@ -23,6 +23,7 @@ import com.messmate.android.data.mess.MessMemberResponse
 @Composable
 fun AdminDashboardScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToAdminMenu: () -> Unit,
     viewModel: AdminViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -57,12 +58,20 @@ fun AdminDashboardScreen(
                     }
                 }
                 is AdminState.Success -> {
-                    Text(
-                        text = "Mess Members",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(16.dp)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Mess Members",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Button(onClick = onNavigateToAdminMenu) {
+                            Text("Manage Menu")
+                        }
+                    }
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()

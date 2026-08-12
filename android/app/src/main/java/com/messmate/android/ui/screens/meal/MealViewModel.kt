@@ -2,7 +2,6 @@ package com.messmate.android.ui.screens.meal
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.messmate.android.data.meal.MealResponse
 import com.messmate.android.data.meal.MealToggleRequest
 import com.messmate.android.data.mess.MessRepository
 import com.messmate.android.network.ApiClient
@@ -10,11 +9,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.time.LocalDate
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 sealed class MealState {
     object Loading : MealState()
-    data class Success(val meal: MealResponse?) : MealState() // Null if no meal selected yet today
+    data class Success(
+        val dateStr: String,
+        val lunchActive: Boolean,
+        val dinnerActive: Boolean,
+        val isSaving: Boolean = false
+    ) : MealState()
     data class Error(val message: String) : MealState()
 }
 
@@ -22,50 +28,58 @@ class MealViewModel : ViewModel() {
     private val _state = MutableStateFlow<MealState>(MealState.Loading)
     val state: StateFlow<MealState> = _state.asStateFlow()
 
-    private val todayString = LocalDate.now().toString()
+    private fun getTodayDateString(): String {
+        val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        return formatter.format(Date())
+    }
 
     init {
         loadTodayMeal()
     }
 
-    private fun loadTodayMeal() {
-        val messId = MessRepository.getMessId()
-        if (messId == null) {
-            _state.value = MealState.Error("No active mess found. Please return to Dashboard.")
-            return
-        }
-
+    fun loadTodayMeal() {
+        val messId = MessRepository.currentMessId.value ?: return
         viewModelScope.launch {
             _state.value = MealState.Loading
             try {
-                val history = ApiClient.apiService.getMealHistory(messId, todayString, todayString)
-                if (history.isNotEmpty()) {
-                    _state.value = MealState.Success(history.first())
-                } else {
-                    _state.value = MealState.Success(null)
-                }
+                val status = ApiClient.apiService.getTodayMealStatus(messId)
+                _state.value = MealState.Success(
+                    dateStr = status.date,
+                    lunchActive = status.lunch,
+                    dinnerActive = status.dinner
+                )
             } catch (e: Exception) {
-                _state.value = MealState.Error("Failed to load today's meal: ${e.localizedMessage}")
+                _state.value = MealState.Error("Failed to fetch today's meal status")
             }
         }
     }
 
-    fun toggleMeal(lunch: Boolean, dinner: Boolean) {
-        val messId = MessRepository.getMessId() ?: return
+    fun toggleMeal(isLunch: Boolean) {
+        val messId = MessRepository.currentMessId.value ?: return
+        val currentState = _state.value
+        if (currentState !is MealState.Success) return
+
+        val newLunch = if (isLunch) !currentState.lunchActive else currentState.lunchActive
+        val newDinner = if (!isLunch) !currentState.dinnerActive else currentState.dinnerActive
         
+        val dateStr = getTodayDateString()
+
         viewModelScope.launch {
-            _state.value = MealState.Loading
+            _state.value = currentState.copy(isSaving = true)
             try {
-                val request = MealToggleRequest(
-                    date = todayString,
-                    lunch = lunch,
-                    dinner = dinner
+                ApiClient.apiService.toggleMeal(
+                    messId,
+                    MealToggleRequest(date = dateStr, lunch = newLunch, dinner = newDinner)
                 )
-                val response = ApiClient.apiService.toggleMeal(messId, request)
-                _state.value = MealState.Success(response)
+                _state.value = currentState.copy(
+                    lunchActive = newLunch,
+                    dinnerActive = newDinner,
+                    isSaving = false
+                )
             } catch (e: Exception) {
-                _state.value = MealState.Error("Failed to update meal: ${e.localizedMessage}")
-                loadTodayMeal() // Reload original state on error
+                _state.value = currentState.copy(isSaving = false)
+                // Reload from backend to revert toggle because it likely failed due to deadline
+                loadTodayMeal()
             }
         }
     }

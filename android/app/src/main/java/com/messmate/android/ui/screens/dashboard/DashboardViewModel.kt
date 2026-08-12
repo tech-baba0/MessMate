@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.messmate.android.data.balance.BalanceResponse
 import com.messmate.android.network.ApiClient
 import com.messmate.android.data.mess.MessRepository
+import com.messmate.android.data.menu.Menu
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +24,9 @@ sealed class DashboardState {
 class DashboardViewModel : ViewModel() {
     private val _state = MutableStateFlow<DashboardState>(DashboardState.Loading)
     val state: StateFlow<DashboardState> = _state.asStateFlow()
+
+    private val _todayMenu = MutableStateFlow<Menu?>(null)
+    val todayMenu: StateFlow<Menu?> = _todayMenu.asStateFlow()
 
     init {
         fetchDashboardData()
@@ -61,6 +65,7 @@ class DashboardViewModel : ViewModel() {
                 
                 val balance = ApiClient.apiService.getMyBalance(mess.id)
                 _state.value = DashboardState.Success(balance, status)
+                fetchTodayMenu(mess.id)
             } catch (e: Exception) {
                 _state.value = DashboardState.Error("Failed to load dashboard: ${e.localizedMessage}")
             }
@@ -76,6 +81,21 @@ class DashboardViewModel : ViewModel() {
                 fetchDashboardData() // Refresh status
             } catch (e: Exception) {
                 _state.value = DashboardState.Error("Failed to join mess: ${e.localizedMessage}")
+            }
+        }
+    }
+
+    private fun fetchTodayMenu(messId: String) {
+        viewModelScope.launch {
+            try {
+                val menu = ApiClient.apiService.getTodayMenu(messId)
+                if (menu.isPublished) {
+                    _todayMenu.value = menu
+                } else {
+                    _todayMenu.value = null
+                }
+            } catch (e: Exception) {
+                _todayMenu.value = null
             }
         }
     }

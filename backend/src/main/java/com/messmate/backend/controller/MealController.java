@@ -1,6 +1,8 @@
 package com.messmate.backend.controller;
 
 import com.messmate.backend.dto.request.MealToggleRequest;
+import com.messmate.backend.dto.response.AdminMealDashboardResponse;
+import com.messmate.backend.dto.response.MealHistorySummaryResponse;
 import com.messmate.backend.dto.response.MessageResponse;
 import com.messmate.backend.security.services.UserDetailsImpl;
 import com.messmate.backend.service.MealService;
@@ -8,6 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -69,5 +72,11 @@ public class MealController {
             return ResponseEntity.ok(mealService.getMealHistory(messId, userId, startDate, endDate));
         }
         return ResponseEntity.badRequest().body(new MessageResponse(false, "User not authenticated"));
+    }
+
+    @PreAuthorize("@messSecurity.isAdmin(authentication, #messId)")
+    @GetMapping("/admin/dashboard")
+    public ResponseEntity<?> getAdminDashboard(@PathVariable String messId) {
+        return ResponseEntity.ok(mealService.getAdminMealDashboard(messId));
     }
 }

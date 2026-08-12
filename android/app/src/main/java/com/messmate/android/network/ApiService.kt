@@ -8,6 +8,7 @@ import com.messmate.android.data.mess.MessResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 import com.messmate.android.data.meal.MealToggleRequest
@@ -17,6 +18,12 @@ interface ApiService {
     
     @POST("auth/google") 
     suspend fun googleLogin(@Body request: com.messmate.android.data.auth.GoogleLoginRequest): AuthResponse
+
+    @POST("auth/register")
+    suspend fun register(@Body request: SignupRequest): AuthResponse
+
+    @POST("auth/login")
+    suspend fun login(@Body request: LoginRequest): AuthResponse
 
     @GET("messes/my")
     suspend fun getMyMesses(): List<com.messmate.android.data.mess.MessMembershipResponse>
@@ -54,7 +61,33 @@ interface ApiService {
         @Path("messId") messId: String,
         @Query("startDate") startDate: String,
         @Query("endDate") endDate: String
-    ): List<MealResponse>
+    ): com.messmate.android.data.meal.MealHistorySummaryResponse
+
+    @GET("admin/messes/{messId}/meals/dashboard")
+    suspend fun getAdminMealDashboard(
+        @Path("messId") messId: String
+    ): com.messmate.android.data.meal.AdminMealDashboardResponse
+
+    @GET("messes/{messId}/menus/today")
+    suspend fun getTodayMenu(
+        @Path("messId") messId: String
+    ): com.messmate.android.data.menu.Menu
+
+    @GET("messes/{messId}/menus")
+    suspend fun getPublishedMenus(
+        @Path("messId") messId: String
+    ): List<com.messmate.android.data.menu.Menu>
+
+    @GET("admin/messes/{messId}/menus")
+    suspend fun getAllMenusAdmin(
+        @Path("messId") messId: String
+    ): List<com.messmate.android.data.menu.Menu>
+
+    @POST("admin/messes/{messId}/menus")
+    suspend fun upsertMenu(
+        @Path("messId") messId: String,
+        @Body request: com.messmate.android.data.menu.MenuRequest
+    )
 
     @POST("messes/{messId}/expenses")
     suspend fun addExpense(

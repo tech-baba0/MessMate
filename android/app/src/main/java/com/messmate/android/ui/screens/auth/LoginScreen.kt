@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -27,7 +28,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun LoginScreen(
     onNavigateToDashboard: () -> Unit,
-    onNavigateToRegister: () -> Unit = {}, // Left as placeholder to avoid breaking nav setup
+    onNavigateToRegister: () -> Unit = {},
     viewModel: AuthViewModel = viewModel()
 ) {
     val authState by viewModel.authState.collectAsState()
@@ -43,7 +44,6 @@ fun LoginScreen(
     Box(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
     ) {
-        // Aesthetic Header Gradient
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -75,7 +75,6 @@ fun LoginScreen(
             }
         }
 
-        // Login Card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -111,11 +110,16 @@ fun LoginScreen(
                         coroutineScope.launch {
                             try {
                                 val credentialManager = CredentialManager.create(context)
+                                val clientId = "401328638959-iuul43hom388ksi8b4gte30ar2j99efr.apps.googleusercontent.com" // TODO: Replace with your actual Web Client ID
+                                if (clientId == "401328638959-iuul43hom388ksi8b4gte30ar2j99efr.apps.googleusercontent.com") {
+                                    viewModel.setError("Developer Error: You must replace 'YOUR_ACTUAL_CLIENT_ID_PLACEHOLDER' with your actual Google Cloud Web Client ID in LoginScreen.kt.")
+                                    return@launch
+                                }
                                 
                                 val googleIdOption = GetGoogleIdOption.Builder()
                                     .setFilterByAuthorizedAccounts(false)
-                                    .setServerClientId("YOUR_ACTUAL_CLIENT_ID_PLACEHOLDER") 
-                                    .setAutoSelectEnabled(true)
+                                    .setServerClientId(clientId)
+                                    .setAutoSelectEnabled(false)
                                     .build()
 
                                 val request = GetCredentialRequest.Builder()
@@ -126,15 +130,18 @@ fun LoginScreen(
                                 val credential = result.credential
                                 
                                 if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                                    try {
-                                        val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
-                                        viewModel.loginWithGoogle(googleIdTokenCredential.idToken)
-                                    } catch (e: Exception) {
-                                        Log.e("Auth", "Failed to parse Google credential", e)
-                                    }
+                                    val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                                    viewModel.loginWithGoogle(googleIdTokenCredential.idToken)
                                 }
+                            } catch (e: NoCredentialException) {
+                                viewModel.setError("No Google accounts found or you dismissed the dialog.")
+                                Log.e("Auth", "No Google accounts found or picker dismissed", e)
                             } catch (e: GetCredentialException) {
-                                Log.e("Auth", "Failed to get credential", e)
+                                viewModel.setError("Google authentication failed. Is your Client ID correct? Error: ${e.message}")
+                                Log.e("Auth", "Credential Manager error: ${e.message}", e)
+                            } catch (e: Exception) {
+                                viewModel.setError("An unexpected error occurred: ${e.message}")
+                                Log.e("Auth", "Unexpected error: ${e.message}", e)
                             }
                         }
                     },
@@ -151,6 +158,12 @@ fun LoginScreen(
                     } else {
                         Text("Sign In with Google", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                TextButton(onClick = onNavigateToRegister) {
+                    Text("Don't have an account? Sign Up", color = Color(0xFF4F46E5))
                 }
             }
         }

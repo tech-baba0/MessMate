@@ -37,7 +37,43 @@ class AuthViewModel : ViewModel() {
         }
     }
 
+    fun register(name: String, phone: String, email: String, password: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            try {
+                val request = SignupRequest(name, phone, email, password)
+                val response = ApiClient.apiService.register(request)
+                
+                ApiClient.tokenManager.saveToken(response.token)
+                _authState.value = AuthState.Success(response.token)
+            } catch (e: Exception) {
+                val errorMsg = e.localizedMessage ?: "Registration failed"
+                _authState.value = AuthState.Error(errorMsg)
+            }
+        }
+    }
+
+    fun login(email: String, password: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            try {
+                val request = LoginRequest(email, password)
+                val response = ApiClient.apiService.login(request)
+                
+                ApiClient.tokenManager.saveToken(response.token)
+                _authState.value = AuthState.Success(response.token)
+            } catch (e: Exception) {
+                val errorMsg = e.localizedMessage ?: "Login failed"
+                _authState.value = AuthState.Error(errorMsg)
+            }
+        }
+    }
+
     fun resetState() {
         _authState.value = AuthState.Idle
+    }
+    
+    fun setError(message: String) {
+        _authState.value = AuthState.Error(message)
     }
 }
