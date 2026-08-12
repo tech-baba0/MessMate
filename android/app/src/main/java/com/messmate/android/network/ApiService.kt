@@ -15,17 +15,33 @@ import com.messmate.android.data.meal.MealResponse
 
 interface ApiService {
     
-    @POST("auth/login") 
-    suspend fun login(@Body request: LoginRequest): AuthResponse
-
-    @POST("auth/register")
-    suspend fun register(@Body request: SignupRequest): Any // Returns MessageResponse normally
+    @POST("auth/google") 
+    suspend fun googleLogin(@Body request: com.messmate.android.data.auth.GoogleLoginRequest): AuthResponse
 
     @GET("messes/my")
-    suspend fun getMyMesses(): List<MessResponse>
+    suspend fun getMyMesses(): List<com.messmate.android.data.mess.MessMembershipResponse>
+
+    @POST("messes/join")
+    suspend fun joinMess(@Body request: com.messmate.android.data.mess.JoinMessRequest): com.messmate.android.data.mess.MessMembershipResponse
+    
+    // Admin Endpoints
+    @GET("messes/{messId}/members")
+    suspend fun getMessMembers(@Path("messId") messId: String): List<com.messmate.android.data.mess.MessMemberResponse>
+
+    @PUT("messes/{messId}/members/{memberId}/approve")
+    suspend fun approveMember(@Path("messId") messId: String, @Path("memberId") memberId: String): com.messmate.android.data.mess.MessMemberResponse
+
+    @PUT("messes/{messId}/members/{memberId}/reject")
+    suspend fun rejectMember(@Path("messId") messId: String, @Path("memberId") memberId: String): com.messmate.android.data.mess.MessMemberResponse
+    
+    @PUT("messes/{messId}/members/{memberId}/role")
+    suspend fun changeMemberRole(@Path("messId") messId: String, @Path("memberId") memberId: String, @Query("role") role: String): com.messmate.android.data.mess.MessMemberResponse
 
     @GET("messes/{messId}/balance/me")
     suspend fun getMyBalance(@Path("messId") messId: String): BalanceResponse
+
+    @GET("messes/{messId}/meals/today")
+    suspend fun getTodayMealStatus(@Path("messId") messId: String): com.messmate.android.data.meal.MealStatusResponse
 
     @POST("messes/{messId}/meals")
     suspend fun toggleMeal(

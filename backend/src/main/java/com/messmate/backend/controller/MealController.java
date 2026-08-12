@@ -17,10 +17,10 @@ import java.time.LocalDate;
 @RestController
 @RequestMapping("/api/messes/{messId}/meals")
 public class MealController {
-    
+
     @Autowired
     private MealService mealService;
-    
+
     @PostMapping
     public ResponseEntity<?> toggleMeal(@PathVariable String messId, @Valid @RequestBody MealToggleRequest request) {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -34,13 +34,35 @@ public class MealController {
         }
         return ResponseEntity.badRequest().body(new MessageResponse(false, "User not authenticated"));
     }
-    
+
+    @GetMapping("/today")
+    public ResponseEntity<?> getTodayMealStatus(@PathVariable String messId) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetailsImpl) {
+            String userId = ((UserDetailsImpl) principal).getId();
+            return ResponseEntity.ok(mealService.getUserMealStatus(messId, userId, LocalDate.now()));
+        }
+        return ResponseEntity.badRequest().body(new MessageResponse(false, "User not authenticated"));
+    }
+
+    @GetMapping("/status")
+    public ResponseEntity<?> getMealStatusForDate(
+            @PathVariable String messId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetailsImpl) {
+            String userId = ((UserDetailsImpl) principal).getId();
+            return ResponseEntity.ok(mealService.getUserMealStatus(messId, userId, date));
+        }
+        return ResponseEntity.badRequest().body(new MessageResponse(false, "User not authenticated"));
+    }
+
     @GetMapping("/history")
     public ResponseEntity<?> getMealHistory(
             @PathVariable String messId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-            
+
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal instanceof UserDetailsImpl) {
             String userId = ((UserDetailsImpl) principal).getId();

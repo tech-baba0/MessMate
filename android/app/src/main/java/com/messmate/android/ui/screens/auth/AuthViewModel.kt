@@ -21,36 +21,18 @@ class AuthViewModel : ViewModel() {
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
-    fun login(email: String, password: String) {
+    fun loginWithGoogle(idToken: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                val request = LoginRequest(email = email, password = password)
-                val response = ApiClient.apiService.login(request)
+                val request = com.messmate.android.data.auth.GoogleLoginRequest(idToken = idToken)
+                val response = ApiClient.apiService.googleLogin(request)
                 
-                // Save the token globally
                 ApiClient.tokenManager.saveToken(response.token)
-                
                 _authState.value = AuthState.Success(response.token)
             } catch (e: Exception) {
-                // TODO: Better error parsing
                 val errorMsg = e.localizedMessage ?: "Unknown error occurred"
-                _authState.value = AuthState.Error("Login Failed: $errorMsg")
-            }
-        }
-    }
-
-    fun register(name: String, phone: String, email: String, password: String) {
-        viewModelScope.launch {
-            _authState.value = AuthState.Loading
-            try {
-                val request = SignupRequest(name = name, phone = phone, email = email, password = password)
-                ApiClient.apiService.register(request)
-                // Use token literal to signify success
-                _authState.value = AuthState.Success("REGISTER_SUCCESS")
-            } catch (e: Exception) {
-                val errorMsg = e.localizedMessage ?: "Unknown error occurred"
-                _authState.value = AuthState.Error("Registration Failed: $errorMsg")
+                _authState.value = AuthState.Error("Google Login Failed: $errorMsg")
             }
         }
     }

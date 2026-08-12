@@ -8,6 +8,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Data
@@ -18,18 +19,24 @@ import java.util.Set;
 public class User {
     @Id
     private String id;
-    
-    private String name;
-    
+
     @Indexed(unique = true)
-    private String phone;
-    
+    private String googleSubjectId;
+
+    private String name;
+
     @Indexed(unique = true)
     private String email;
-    
-    private String password;
-    
+
     private String profilePhoto;
-    
+
+    private String messId;
+
+    private AccountStatus accountStatus;
+
     private Set<Role> roles;
+
+    private LocalDateTime createdDate;
+
+    private LocalDateTime lastLogin;
 }

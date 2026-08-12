@@ -12,7 +12,11 @@ import kotlinx.coroutines.launch
 
 sealed class DashboardState {
     object Loading : DashboardState()
-    data class Success(val balance: BalanceResponse) : DashboardState()
+    data class Success(val balance: BalanceResponse, val role: String) : DashboardState()
+    data class PendingApproval(val messName: String) : DashboardState()
+    data class Rejected(val messName: String) : DashboardState()
+    data class Inactive(val messName: String) : DashboardState()
+    object NoMess : DashboardState()
     data class Error(val message: String) : DashboardState()
 }
 
@@ -28,19 +32,50 @@ class DashboardViewModel : ViewModel() {
         viewModelScope.launch {
             _state.value = DashboardState.Loading
             try {
-                val messes = ApiClient.apiService.getMyMesses()
-                if (messes.isEmpty()) {
-                    _state.value = DashboardState.Error("You are not part of any mess yet. Please ask your admin for an invite code.")
+                val memberships = ApiClient.apiService.getMyMesses()
+                if (memberships.isEmpty()) {
+                    _state.value = DashboardState.NoMess
                     return@launch
                 }
                 
-                val firstMessId = messes.first().id
-                MessRepository.setCurrentMessId(firstMessId)
+                val firstMember = memberships.first()
+                val mess = firstMember.mess
+                val status = firstMember.status
                 
-                val balance = ApiClient.apiService.getMyBalance(firstMessId)
-                _state.value = DashboardState.Success(balance)
+                when (status) {
+                    "PENDING" -> {
+                        _state.value = DashboardState.PendingApproval(mess.name)
+                        return@launch
+                    }
+                    "REJECTED" -> {
+                        _state.value = DashboardState.Rejected(mess.name)
+                        return@launch
+                    }
+                    "INACTIVE" -> {
+                        _state.value = DashboardState.Inactive(mess.name)
+                        return@launch
+                    }
+                }
+                
+                MessRepository.setCurrentMessId(mess.id)
+                
+                val balance = ApiClient.apiService.getMyBalance(mess.id)
+                _state.value = DashboardState.Success(balance, status)
             } catch (e: Exception) {
                 _state.value = DashboardState.Error("Failed to load dashboard: ${e.localizedMessage}")
+            }
+        }
+    }
+
+    fun joinMess(inviteCode: String) {
+        viewModelScope.launch {
+            _state.value = DashboardState.Loading
+            try {
+                val request = com.messmate.android.data.mess.JoinMessRequest(inviteCode)
+                ApiClient.apiService.joinMess(request)
+                fetchDashboardData() // Refresh status
+            } catch (e: Exception) {
+                _state.value = DashboardState.Error("Failed to join mess: ${e.localizedMessage}")
             }
         }
     }

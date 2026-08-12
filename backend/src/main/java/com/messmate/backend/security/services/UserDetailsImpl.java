@@ -1,6 +1,5 @@
 package com.messmate.backend.security.services;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.messmate.backend.entity.User;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
@@ -15,21 +14,15 @@ import java.util.stream.Collectors;
 public class UserDetailsImpl implements UserDetails {
     private String id;
     private String name;
-    private String phone;
     private String email;
-
-    @JsonIgnore
-    private String password;
 
     private Collection<? extends GrantedAuthority> authorities;
 
-    public UserDetailsImpl(String id, String name, String phone, String email, String password,
-                           Collection<? extends GrantedAuthority> authorities) {
+    public UserDetailsImpl(String id, String name, String email,
+            Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
         this.name = name;
-        this.phone = phone;
         this.email = email;
-        this.password = password;
         this.authorities = authorities;
     }
 
@@ -41,9 +34,7 @@ public class UserDetailsImpl implements UserDetails {
         return new UserDetailsImpl(
                 user.getId(),
                 user.getName(),
-                user.getPhone(),
                 user.getEmail(),
-                user.getPassword(),
                 authorities);
     }
 
@@ -54,7 +45,7 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public String getPassword() {
-        return password;
+        return "";
     }
 
     @Override
@@ -63,14 +54,22 @@ public class UserDetailsImpl implements UserDetails {
     }
 
     @Override
-    public boolean isAccountNonExpired() { return true; }
+    public boolean isAccountNonExpired() {
+        return true;
+    }
 
     @Override
-    public boolean isAccountNonLocked() { return true; }
+    public boolean isAccountNonLocked() {
+        return true;
+    }
 
     @Override
-    public boolean isCredentialsNonExpired() { return true; }
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
 
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() {
+        return true;
+    }
 }

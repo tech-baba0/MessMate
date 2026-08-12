@@ -30,6 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun DashboardScreen(
     onNavigateToMeal: () -> Unit,
     onNavigateToBazar: () -> Unit,
+    onNavigateToAdmin: () -> Unit,
     viewModel: DashboardViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -65,7 +66,7 @@ fun DashboardScreen(
                 .padding(paddingValues)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // Balance Card
+            // Balance or Status Card
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -80,6 +81,57 @@ fun DashboardScreen(
             ) {
                 if (state is DashboardState.Loading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.align(Alignment.Center))
+                } else if (state is DashboardState.NoMess) {
+                    var inviteCode by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "You are not in a mess yet.",
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedTextField(
+                            value = inviteCode,
+                            onValueChange = { inviteCode = it },
+                            label = { Text("Invite Code", color = Color.White.copy(0.7f)) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = Color.White,
+                                unfocusedBorderColor = Color.White.copy(0.5f)
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { viewModel.joinMess(inviteCode) },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                        ) {
+                            Text("Join Mess")
+                        }
+                    }
+                } else if (state is DashboardState.PendingApproval) {
+                    Text(
+                        text = "Your account is waiting for Admin approval.",
+                        color = Color.Yellow,
+                        modifier = Modifier.align(Alignment.Center),
+                        fontWeight = FontWeight.Bold
+                    )
+                } else if (state is DashboardState.Rejected) {
+                    Text(
+                        text = "Your request was rejected by the Admin.",
+                        color = Color.Red,
+                        modifier = Modifier.align(Alignment.Center),
+                        fontWeight = FontWeight.Bold
+                    )
+                } else if (state is DashboardState.Inactive) {
+                    Text(
+                        text = "Your mess access is currently inactive.",
+                        color = Color.Gray,
+                        modifier = Modifier.align(Alignment.Center),
+                        fontWeight = FontWeight.Bold
+                    )
                 } else if (state is DashboardState.Success) {
                     val balance = (state as DashboardState.Success).balance
                     
@@ -118,35 +170,56 @@ fun DashboardScreen(
                 }
             }
 
-            Text(
-                text = "Quick Actions",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-            )
+            if (state is DashboardState.Success) {
+                Text(
+                    text = "Quick Actions",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                ActionCard(
-                    title = "Meals",
-                    icon = Icons.Default.RestaurantMenu,
-                    color = Color(0xFF10B981),
-                    modifier = Modifier.weight(1f)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    onNavigateToMeal()
+                    ActionCard(
+                        title = "Meals",
+                        icon = Icons.Default.RestaurantMenu,
+                        color = Color(0xFF10B981),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        onNavigateToMeal()
+                    }
+                    ActionCard(
+                        title = "Bazar",
+                        icon = Icons.Default.ShoppingCart,
+                        color = Color(0xFFF59E0B),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        onNavigateToBazar()
+                    }
                 }
-                ActionCard(
-                    title = "Bazar",
-                    icon = Icons.Default.ShoppingCart,
-                    color = Color(0xFFF59E0B),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    onNavigateToBazar()
+                
+                if ((state as DashboardState.Success).role == "ROLE_ADMIN") {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        ActionCard(
+                            title = "Admin Panel",
+                            icon = Icons.Default.AccountCircle,
+                            color = Color(0xFFE11D48),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            onNavigateToAdmin()
+                        }
+                    }
                 }
             }
         }

@@ -1,6 +1,7 @@
 package com.messmate.backend.service;
 
 import com.messmate.backend.dto.request.MealToggleRequest;
+import com.messmate.backend.dto.response.MealStatusResponse;
 import com.messmate.backend.entity.MealEntry;
 import com.messmate.backend.entity.Mess;
 import com.messmate.backend.repository.MealRepository;
@@ -36,22 +37,27 @@ public class MealService {
                 throw new RuntimeException("Meal selection cutoff time has passed");
             }
         }
-        
+
         if (request.getDate().isBefore(LocalDate.now())) {
             throw new RuntimeException("Cannot edit past meal entries");
         }
 
-        Optional<MealEntry> existingOpt = mealRepository.findByMessIdAndUserIdAndDate(messId, userId, request.getDate());
+        Optional<MealEntry> existingOpt = mealRepository.findByMessIdAndUserIdAndDate(messId, userId,
+                request.getDate());
 
         Double units = 0.0;
-        if (request.getLunch() != null && request.getLunch()) units += 1.0;
-        if (request.getDinner() != null && request.getDinner()) units += 1.0;
+        if (request.getLunch() != null && request.getLunch())
+            units += 1.0;
+        if (request.getDinner() != null && request.getDinner())
+            units += 1.0;
 
         MealEntry entry;
         if (existingOpt.isPresent()) {
             entry = existingOpt.get();
-            if (request.getLunch() != null) entry.setLunch(request.getLunch());
-            if (request.getDinner() != null) entry.setDinner(request.getDinner());
+            if (request.getLunch() != null)
+                entry.setLunch(request.getLunch());
+            if (request.getDinner() != null)
+                entry.setDinner(request.getDinner());
             entry.setMealUnits(units);
         } else {
             entry = MealEntry.builder()
@@ -66,7 +72,22 @@ public class MealService {
 
         return mealRepository.save(entry);
     }
-    
+
+    public MealStatusResponse getUserMealStatus(String messId, String userId, LocalDate date) {
+        Mess mess = messRepository.findById(messId)
+                .orElseThrow(() -> new RuntimeException("Mess not found"));
+
+        Optional<MealEntry> existingOpt = mealRepository.findByMessIdAndUserIdAndDate(messId, userId, date);
+
+        if (existingOpt.isPresent()) {
+            return new MealStatusResponse(date, existingOpt.get().getLunch(), existingOpt.get().getDinner());
+        } else {
+            // Implicit YES-by-default logic if no entry exists
+            return new MealStatusResponse(date, mess.getDefaultLunchAvailability(),
+                    mess.getDefaultDinnerAvailability());
+        }
+    }
+
     public List<MealEntry> getMealHistory(String messId, String userId, LocalDate start, LocalDate end) {
         return mealRepository.findByMessIdAndUserIdAndDateBetween(messId, userId, start, end);
     }
