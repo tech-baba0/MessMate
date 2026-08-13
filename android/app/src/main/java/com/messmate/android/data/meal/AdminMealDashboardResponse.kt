@@ -9,5 +9,6 @@ data class AdminMealDashboardResponse(
     val totalDinnerMeals: Int,
     val totalMealUnits: Int,
     val lunchVotingStatus: String,
-    val dinnerVotingStatus: String
+    val dinnerVotingStatus: String,
+    val memberDetails: List<MemberMealDetailResponse>? = null
 )

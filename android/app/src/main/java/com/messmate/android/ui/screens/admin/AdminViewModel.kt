@@ -2,9 +2,11 @@ package com.messmate.android.ui.screens.admin
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.messmate.android.data.meal.AdminMealDashboardResponse
 import com.messmate.android.data.mess.MessMemberResponse
 import com.messmate.android.data.mess.MessRepository
 import com.messmate.android.network.ApiClient
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,7 +14,10 @@ import kotlinx.coroutines.launch
 
 sealed class AdminState {
     object Loading : AdminState()
-    data class Success(val members: List<MessMemberResponse>) : AdminState()
+    data class Success(
+        val members: List<MessMemberResponse>,
+        val mealDashboard: AdminMealDashboardResponse
+    ) : AdminState()
     data class Error(val message: String) : AdminState()
 }
 
@@ -21,18 +26,24 @@ class AdminViewModel : ViewModel() {
     val state: StateFlow<AdminState> = _state.asStateFlow()
 
     init {
-        fetchMembers()
+        loadDashboard()
     }
 
-    fun fetchMembers() {
+    fun loadDashboard() {
         val messId = MessRepository.currentMessId.value ?: return
         viewModelScope.launch {
             _state.value = AdminState.Loading
             try {
-                val members = ApiClient.apiService.getMessMembers(messId)
-                _state.value = AdminState.Success(members)
+                // Fetch both API endpoints concurrently
+                val membersDeferred = async { ApiClient.apiService.getMessMembers(messId) }
+                val statsDeferred = async { ApiClient.apiService.getAdminMealDashboard(messId) }
+                
+                val members = membersDeferred.await()
+                val stats = statsDeferred.await()
+                
+                _state.value = AdminState.Success(members, stats)
             } catch (e: Exception) {
-                _state.value = AdminState.Error("Failed to fetch members: ${e.localizedMessage}")
+                _state.value = AdminState.Error("Failed to fetch admin data: ${e.localizedMessage}")
             }
         }
     }
@@ -42,9 +53,9 @@ class AdminViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 ApiClient.apiService.approveMember(messId, memberId)
-                fetchMembers()
+                loadDashboard()
             } catch (e: Exception) {
-                // Ignore for now or handle
+                // Ignore for now or handle locally
             }
         }
     }
@@ -54,9 +65,9 @@ class AdminViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 ApiClient.apiService.rejectMember(messId, memberId)
-                fetchMembers()
+                loadDashboard()
             } catch (e: Exception) {
-                // Ignore for now or handle
+                // Ignore for now or handle locally
             }
         }
     }
@@ -66,9 +77,9 @@ class AdminViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 ApiClient.apiService.changeMemberRole(messId, memberId, newRole)
-                fetchMembers()
+                loadDashboard()
             } catch (e: Exception) {
-                // Ignore for now or handle
+                // Ignore for now or handle locally
             }
         }
     }

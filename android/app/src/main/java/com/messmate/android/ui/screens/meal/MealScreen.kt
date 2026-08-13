@@ -63,7 +63,7 @@ fun MealScreen(
                             color = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(text = s.dateStr, fontSize = 16.sp, color = Color.Gray)
+                        Text(text = s.selectedDateStr, fontSize = 16.sp, color = Color.Gray)
 
                         Spacer(modifier = Modifier.height(32.dp))
 
@@ -71,7 +71,7 @@ fun MealScreen(
                             mealName = "Lunch",
                             isActive = s.lunchActive,
                             isSaving = s.isSaving,
-                            onToggle = { viewModel.toggleMeal(isLunch = true) }
+                            onToggle = { viewModel.updateMeals(!s.lunchActive, s.dinnerActive) }
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -80,7 +80,7 @@ fun MealScreen(
                             mealName = "Dinner",
                             isActive = s.dinnerActive,
                             isSaving = s.isSaving,
-                            onToggle = { viewModel.toggleMeal(isLunch = false) }
+                            onToggle = { viewModel.updateMeals(s.lunchActive, !s.dinnerActive) }
                         )
                     }
                 }

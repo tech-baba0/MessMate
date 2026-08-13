@@ -20,4 +20,6 @@ public class AdminMealDashboardResponse {
 
     private String lunchVotingStatus; // "OPEN" or "CLOSED"
     private String dinnerVotingStatus; // "OPEN" or "CLOSED"
+
+    private java.util.List<MemberMealDetailResponse> memberDetails;
 }

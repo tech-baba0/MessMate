@@ -11,6 +11,8 @@ import com.messmate.backend.entity.MessMember;
 import com.messmate.backend.repository.MealRepository;
 import com.messmate.backend.repository.MessMemberRepository;
 import com.messmate.backend.repository.MessRepository;
+import com.messmate.backend.repository.UserRepository;
+import com.messmate.backend.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +35,9 @@ public class MealService {
 
     @Autowired
     private MessMemberRepository messMemberRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     public MealEntry toggleMeal(String messId, String userId, MealToggleRequest request) {
         Mess mess = messRepository.findById(messId)
@@ -242,6 +247,9 @@ public class MealService {
         int todayDinnerYes = 0;
         int todayDinnerNo = 0;
 
+        List<com.messmate.backend.dto.response.MemberMealDetailResponse> detailedRecords = new ArrayList<>();
+        java.time.format.DateTimeFormatter timeFormatter = java.time.format.DateTimeFormatter.ofPattern("hh:mm a");
+
         for (MessMember member : activeMembers) {
             LocalDate join = member.getJoinDate() != null ? member.getJoinDate().toLocalDate() : LocalDate.MIN;
             if (todayIndia.isBefore(join))
@@ -259,6 +267,34 @@ public class MealService {
                 todayDinnerYes++;
             else
                 todayDinnerNo++;
+
+            String lunchTime = "Default";
+            String dinnerTime = "Default";
+
+            if (e != null) {
+                if (e.getLunchUpdatedAt() != null) {
+                    lunchTime = e.getLunchUpdatedAt().format(timeFormatter);
+                } else if (e.getUpdatedTimestamp() != null) {
+                    lunchTime = e.getUpdatedTimestamp().format(timeFormatter);
+                }
+
+                if (e.getDinnerUpdatedAt() != null) {
+                    dinnerTime = e.getDinnerUpdatedAt().format(timeFormatter);
+                } else if (e.getUpdatedTimestamp() != null) {
+                    dinnerTime = e.getUpdatedTimestamp().format(timeFormatter);
+                }
+            }
+
+            User user = userRepository.findById(member.getUserId()).orElse(null);
+            String userName = user != null ? user.getName() : "Unknown";
+
+            detailedRecords.add(com.messmate.backend.dto.response.MemberMealDetailResponse.builder()
+                    .userName(userName)
+                    .lunch(lunch)
+                    .dinner(dinner)
+                    .lunchUpdatedAt(lunchTime)
+                    .dinnerUpdatedAt(dinnerTime)
+                    .build());
         }
 
         return AdminMealDashboardResponse.builder()
@@ -271,6 +307,7 @@ public class MealService {
                 .totalMealUnits(todayLunchYes + todayDinnerYes)
                 .lunchVotingStatus(lunchStatus)
                 .dinnerVotingStatus(dinnerStatus)
+                .memberDetails(detailedRecords)
                 .build();
     }
 }
