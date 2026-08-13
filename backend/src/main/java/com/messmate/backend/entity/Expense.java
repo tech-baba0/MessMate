@@ -19,21 +19,25 @@ import java.util.List;
 public class Expense {
     @Id
     private String id;
-    
+
     @Indexed
     private String messId;
-    
+
     private String purchasedById;
-    
+
     private String title;
     private LocalDate date;
     private String description;
-    
+
+    private String category;
+    private String mealScope; // LUNCH, DINNER, BOTH
+    private String receiptUrl;
+
     private Double totalAmount;
-    
+
     private String splitMethod; // EQUAL, MEAL_BASED
-    
+
     private String status; // ACTIVE, CANCELLED
-    
+
     private List<ExpenseItem> items;
 }

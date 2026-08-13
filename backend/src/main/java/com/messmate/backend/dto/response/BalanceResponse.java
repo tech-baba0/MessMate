@@ -17,5 +17,7 @@ public class BalanceResponse {
 
     private Double netBalance; // > 0 means receive, < 0 means owe
 
+    private Double pendingPaymentsMade;
+
     private String balanceMessage;
 }

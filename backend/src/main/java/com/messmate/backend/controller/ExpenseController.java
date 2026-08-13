@@ -32,6 +32,20 @@ public class ExpenseController {
         return ResponseEntity.badRequest().body(new MessageResponse(false, "User not authenticated"));
     }
 
+    @PostMapping("/calculate-split")
+    public ResponseEntity<?> calculateSplitPreview(@PathVariable String messId,
+            @Valid @RequestBody ExpenseRequest request) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetailsImpl) {
+            try {
+                return ResponseEntity.ok(expenseService.previewSplit(messId, request));
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(new MessageResponse(false, e.getMessage()));
+            }
+        }
+        return ResponseEntity.badRequest().body(new MessageResponse(false, "User not authenticated"));
+    }
+
     @GetMapping
     public ResponseEntity<?> getAllExpenses(@PathVariable String messId) {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();

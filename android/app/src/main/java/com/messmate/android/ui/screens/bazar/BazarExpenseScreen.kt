@@ -2,103 +2,91 @@ package com.messmate.android.ui.screens.bazar
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.*
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.text.KeyboardOptions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BazarExpenseScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToAddExpense: () -> Unit,
     viewModel: BazarViewModel = viewModel()
 ) {
-    val state by viewModel.state.collectAsState()
-    var title by remember { mutableStateOf("") }
-    var amount by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
+    val history by viewModel.history.collectAsState()
+    val members by viewModel.members.collectAsState()
+    
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Bazar Expenses", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text("Bazar History", color = Color.White, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-                modifier = Modifier.background(Brush.horizontalGradient(listOf(Color(0xFFF59E0B), Color(0xFFD97706))))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF111119))
             )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background)
-        ) {
-            Box(
-                modifier = Modifier.fillMaxWidth().padding(20.dp).clip(RoundedCornerShape(20.dp))
-                    .background(MaterialTheme.colorScheme.surface).padding(20.dp)
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onNavigateToAddExpense,
+                containerColor = Color(0xFF00FFB2),
+                contentColor = Color.Black
             ) {
-                 Column {
-                     Text("Record New Expense", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                     Spacer(modifier = Modifier.height(16.dp))
-                     
-                     if (state is BazarState.Loading) {
-                         CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-                     } else if (state is BazarState.Success) {
-                         Text("Expense added successfully!", color = Color(0xFF10B981), modifier = Modifier.padding(bottom = 16.dp))
-                     } else if (state is BazarState.Error) {
-                         Text((state as BazarState.Error).message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = 16.dp))
-                     }
-                     
-                     OutlinedTextField(
-                         value = title,
-                         onValueChange = { title = it },
-                         label = { Text("Items/Title") },
-                         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
-                     )
-                     
-                     OutlinedTextField(
-                         value = amount,
-                         onValueChange = { amount = it },
-                         label = { Text("Amount (₹)") },
-                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
-                     )
-                     
-                     OutlinedTextField(
-                         value = description,
-                         onValueChange = { description = it },
-                         label = { Text("Description (Optional)") },
-                         modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
-                     )
-                     
-                     Button(
-                         onClick = { 
-                             viewModel.addExpense(title, amount.toDoubleOrNull() ?: 0.0, description) 
-                         },
-                         modifier = Modifier.fillMaxWidth().height(50.dp),
-                         shape = RoundedCornerShape(12.dp),
-                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B))
-                     ) {
-                         Text("Save Expense", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                     }
-                 }
+                Icon(Icons.Default.Add, contentDescription = "Add Expense")
+            }
+        },
+        containerColor = Color(0xFF111119)
+    ) { paddingValues ->
+        if (history.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
+                Text("No expenses recorded yet.", color = Color.LightGray)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(history) { expense ->
+                    val payerName = members.find { it.userId == expense.purchasedById }?.name ?: expense.purchasedById ?: "Unknown"
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E2C)),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text(expense.title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("₹%.2f".format(expense.totalAmount), color = Color(0xFF00FFB2), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Date: ${expense.date}", color = Color.LightGray, fontSize = 14.sp)
+                            Text("Paid by: $payerName", color = Color.LightGray, fontSize = 14.sp)
+                            Text("Category: ${expense.category ?: "N/A"}", color = Color.LightGray, fontSize = 14.sp)
+                            Text("Scope: ${expense.mealScope ?: "BOTH"}", color = Color.LightGray, fontSize = 14.sp)
+                            Text("Split Method: ${expense.splitMethod ?: "AUTO_MEAL"}", color = Color.Gray, fontSize = 12.sp)
+                        }
+                    }
+                }
             }
         }
     }

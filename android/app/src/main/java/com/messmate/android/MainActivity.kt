@@ -6,9 +6,11 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
 import com.messmate.android.network.ApiClient
 import com.messmate.android.ui.navigation.MessMateNavGraph
 import com.messmate.android.ui.theme.MessMateTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,7 +27,7 @@ class MainActivity : ComponentActivity() {
                         try {
                             com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
                                 if (task.isSuccessful && task.result != null) {
-                                    androidx.lifecycle.lifecycleScope.launchWhenStarted {
+                                    lifecycleScope.launch {
                                         try {
                                             ApiClient.apiService.updateFcmToken(
                                                 com.messmate.android.data.auth.FcmTokenRequest(task.result!!)

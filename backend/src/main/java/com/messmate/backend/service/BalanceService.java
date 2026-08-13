@@ -18,72 +18,79 @@ import java.util.stream.Collectors;
 @Service
 public class BalanceService {
 
-    @Autowired
-    private ExpenseRepository expenseRepository;
+        @Autowired
+        private ExpenseRepository expenseRepository;
 
-    @Autowired
-    private ExpenseShareRepository expenseShareRepository;
+        @Autowired
+        private ExpenseShareRepository expenseShareRepository;
 
-    @Autowired
-    private PaymentRepository paymentRepository;
+        @Autowired
+        private PaymentRepository paymentRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+        @Autowired
+        private UserRepository userRepository;
 
-    public BalanceResponse getBalanceForUser(String messId, String userId) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        public BalanceResponse getBalanceForUser(String messId, String userId) {
+                User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<Expense> allExpenses = expenseRepository.findByMessId(messId).stream()
-                .filter(e -> "ACTIVE".equals(e.getStatus()))
-                .collect(Collectors.toList());
+                List<Expense> allExpenses = expenseRepository.findByMessId(messId).stream()
+                                .filter(e -> "ACTIVE".equals(e.getStatus()))
+                                .collect(Collectors.toList());
 
-        double totalPaidForBazar = allExpenses.stream()
-                .filter(e -> userId.equals(e.getPurchasedById()))
-                .mapToDouble(Expense::getTotalAmount)
-                .sum();
+                double totalPaidForBazar = allExpenses.stream()
+                                .filter(e -> userId.equals(e.getPurchasedById()))
+                                .mapToDouble(Expense::getTotalAmount)
+                                .sum();
 
-        List<ExpenseShare> myShares = expenseShareRepository.findByMessIdAndUserId(messId, userId);
-        double totalExpenseShare = myShares.stream()
-                .mapToDouble(ExpenseShare::getShareAmount)
-                .sum();
+                List<ExpenseShare> myShares = expenseShareRepository.findByMessIdAndUserId(messId, userId);
+                double totalExpenseShare = myShares.stream()
+                                .mapToDouble(ExpenseShare::getShareAmount)
+                                .sum();
 
-        List<Payment> allPayments = paymentRepository.findByMessId(messId).stream()
-                .filter(p -> "COMPLETED".equals(p.getStatus()))
-                .collect(Collectors.toList());
+                List<Payment> allPayments = paymentRepository.findByMessId(messId).stream()
+                                .filter(p -> "COMPLETED".equals(p.getStatus()))
+                                .collect(Collectors.toList());
 
-        double paymentsMade = allPayments.stream()
-                .filter(p -> userId.equals(p.getPaidById()))
-                .mapToDouble(Payment::getAmount)
-                .sum();
+                double paymentsMade = allPayments.stream()
+                                .filter(p -> userId.equals(p.getPaidById()))
+                                .mapToDouble(Payment::getAmount)
+                                .sum();
 
-        double paymentsReceived = allPayments.stream()
-                .filter(p -> userId.equals(p.getPaidToId()))
-                .mapToDouble(Payment::getAmount)
-                .sum();
+                double pendingPaymentsMade = paymentRepository.findByMessId(messId).stream()
+                                .filter(p -> "PENDING".equals(p.getStatus()))
+                                .filter(p -> userId.equals(p.getPaidById()))
+                                .mapToDouble(Payment::getAmount)
+                                .sum();
 
-        double totalGiven = totalPaidForBazar + paymentsMade;
-        double totalConsumed = totalExpenseShare + paymentsReceived;
+                double paymentsReceived = allPayments.stream()
+                                .filter(p -> userId.equals(p.getPaidToId()))
+                                .mapToDouble(Payment::getAmount)
+                                .sum();
 
-        double netBalance = totalGiven - totalConsumed;
+                double totalGiven = totalPaidForBazar + paymentsMade;
+                double totalConsumed = totalExpenseShare + paymentsReceived;
 
-        String balanceMessage;
-        if (Math.abs(netBalance) < 0.01) {
-            balanceMessage = "Settled";
-        } else if (netBalance > 0) {
-            balanceMessage = "You should receive ₹" + String.format("%.2f", netBalance);
-        } else {
-            balanceMessage = "You owe ₹" + String.format("%.2f", Math.abs(netBalance));
+                double netBalance = totalGiven - totalConsumed;
+
+                String balanceMessage;
+                if (Math.abs(netBalance) < 0.01) {
+                        balanceMessage = "Settled";
+                } else if (netBalance > 0) {
+                        balanceMessage = "You should receive ₹" + String.format("%.2f", netBalance);
+                } else {
+                        balanceMessage = "You owe ₹" + String.format("%.2f", Math.abs(netBalance));
+                }
+
+                return BalanceResponse.builder()
+                                .userId(userId)
+                                .name(user.getName())
+                                .totalExpenseShare(totalExpenseShare)
+                                .totalPaidForBazar(totalPaidForBazar)
+                                .paymentsMade(paymentsMade)
+                                .pendingPaymentsMade(pendingPaymentsMade)
+                                .paymentsReceived(paymentsReceived)
+                                .netBalance(netBalance)
+                                .balanceMessage(balanceMessage)
+                                .build();
         }
-
-        return BalanceResponse.builder()
-                .userId(userId)
-                .name(user.getName())
-                .totalExpenseShare(totalExpenseShare)
-                .totalPaidForBazar(totalPaidForBazar)
-                .paymentsMade(paymentsMade)
-                .paymentsReceived(paymentsReceived)
-                .netBalance(netBalance)
-                .balanceMessage(balanceMessage)
-                .build();
-    }
 }

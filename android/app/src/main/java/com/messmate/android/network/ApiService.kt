@@ -117,6 +117,12 @@ interface ApiService {
         @Body request: ExpenseRequest
     ): ExpenseResponse
 
+    @POST("messes/{messId}/expenses/calculate-split")
+    suspend fun calculateSplit(
+        @Path("messId") messId: String,
+        @Body request: ExpenseRequest
+    ): List<com.messmate.android.data.expense.ExpenseShare>
+
     @GET("messes/{messId}/expenses")
     suspend fun getAllExpenses(
         @Path("messId") messId: String
