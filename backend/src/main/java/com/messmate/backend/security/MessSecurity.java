@@ -26,7 +26,7 @@ public class MessSecurity {
 
         return memberOpt.isPresent() &&
                 memberOpt.get().getRole() == Role.ROLE_ADMIN &&
-                "ACTIVE".equals(memberOpt.get().getStatus());
+                ("ACTIVE".equals(memberOpt.get().getStatus()) || "APPROVED".equals(memberOpt.get().getStatus()));
     }
 
     public boolean isActiveMember(Authentication authentication, String messId) {
@@ -37,6 +37,7 @@ public class MessSecurity {
         String userId = ((UserDetailsImpl) authentication.getPrincipal()).getId();
         Optional<MessMember> memberOpt = messMemberRepository.findByMessIdAndUserId(messId, userId);
 
-        return memberOpt.isPresent() && "ACTIVE".equals(memberOpt.get().getStatus());
+        return memberOpt.isPresent() &&
+                ("ACTIVE".equals(memberOpt.get().getStatus()) || "APPROVED".equals(memberOpt.get().getStatus()));
     }
 }

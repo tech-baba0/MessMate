@@ -54,7 +54,7 @@ public class MessService {
                 .messId(savedMess.getId())
                 .userId(userId)
                 .role(Role.ROLE_ADMIN)
-                .status("APPROVED")
+                .status("ACTIVE")
                 .joinDate(LocalDateTime.now())
                 .build();
 

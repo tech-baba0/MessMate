@@ -35,11 +35,6 @@ fun AdminDashboardScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Admin Dashboard") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
                 actions = {
                     IconButton(onClick = onLogout) {
                         Icon(Icons.Default.ExitToApp, contentDescription = "Logout")
