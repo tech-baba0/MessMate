@@ -91,8 +91,15 @@ public class AuthController {
                     .getUserMesses(user.getId());
             if (memberships.isEmpty()) {
                 List<com.messmate.backend.entity.Mess> allMesses = messRepository.findAll();
-                if (!allMesses.isEmpty()) {
+                if (allMesses.isEmpty()) {
+                    com.messmate.backend.dto.request.MessCreateRequest newMessReq = new com.messmate.backend.dto.request.MessCreateRequest();
+                    newMessReq.setName("Default Mess");
+                    // Create the default mess, which automatically assigns this user as ACTIVE
+                    // ADMIN
+                    messService.createMess(newMessReq, user.getId());
+                } else {
                     com.messmate.backend.entity.Mess defaultMess = allMesses.get(0);
+                    // Standard user joins the existing default mess as PENDING
                     try {
                         messService.joinMess(defaultMess.getInviteCode(), user.getId());
                     } catch (Exception ignored) {
