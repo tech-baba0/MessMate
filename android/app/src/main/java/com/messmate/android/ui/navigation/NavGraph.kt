@@ -51,7 +51,11 @@ fun MessMateNavGraph(
             DashboardScreen(
                 onNavigateToMeal = { navController.navigate(Screen.MealSelection.route) },
                 onNavigateToBazar = { navController.navigate(Screen.BazarExpense.route) },
-                onNavigateToAdmin = { navController.navigate(Screen.AdminDashboard.route) },
+                onNavigateToAdmin = { 
+                    navController.navigate(Screen.AdminDashboard.route) {
+                        popUpTo(Screen.Dashboard.route) { inclusive = true }
+                    }
+                },
                 onNavigateToMenu = { navController.navigate(Screen.Menu.route) },
                 onLogout = {
                     com.messmate.android.network.ApiClient.tokenManager.clearToken()
@@ -74,7 +78,13 @@ fun MessMateNavGraph(
         composable(Screen.AdminDashboard.route) {
             AdminDashboardScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToAdminMenu = { navController.navigate(Screen.AdminMenu.route) }
+                onNavigateToAdminMenu = { navController.navigate(Screen.AdminMenu.route) },
+                onLogout = {
+                    com.messmate.android.network.ApiClient.tokenManager.clearToken()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
             )
         }
         composable(Screen.AdminMenu.route) {

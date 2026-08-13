@@ -35,6 +35,12 @@ public class AuthController {
     UserRepository userRepository;
 
     @Autowired
+    com.messmate.backend.repository.MessRepository messRepository;
+
+    @Autowired
+    com.messmate.backend.service.MessService messService;
+
+    @Autowired
     JwtUtils jwtUtils;
 
     @Autowired
@@ -78,6 +84,20 @@ public class AuthController {
                         .lastLogin(LocalDateTime.now())
                         .build();
                 user = userRepository.save(user);
+            }
+
+            // Auto-join default mess if no current memberships
+            List<com.messmate.backend.dto.response.MessMembershipResponse> memberships = messService
+                    .getUserMesses(user.getId());
+            if (memberships.isEmpty()) {
+                List<com.messmate.backend.entity.Mess> allMesses = messRepository.findAll();
+                if (!allMesses.isEmpty()) {
+                    com.messmate.backend.entity.Mess defaultMess = allMesses.get(0);
+                    try {
+                        messService.joinMess(defaultMess.getInviteCode(), user.getId());
+                    } catch (Exception ignored) {
+                    }
+                }
             }
 
             UserDetailsImpl userDetails = UserDetailsImpl.build(user);

@@ -19,11 +19,14 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.messmate.android.data.mess.MessMemberResponse
 
+import androidx.compose.material.icons.filled.ExitToApp
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminDashboardScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAdminMenu: () -> Unit,
+    onLogout: () -> Unit,
     viewModel: AdminViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -35,6 +38,11 @@ fun AdminDashboardScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onLogout) {
+                        Icon(Icons.Default.ExitToApp, contentDescription = "Logout")
                     }
                 }
             )

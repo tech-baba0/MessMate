@@ -217,6 +217,9 @@ fun DashboardScreen(
                 }
                 
                 if ((state as DashboardState.Success).role == "ROLE_ADMIN") {
+                    androidx.compose.runtime.LaunchedEffect(Unit) {
+                        onNavigateToAdmin()
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(
                         modifier = Modifier
