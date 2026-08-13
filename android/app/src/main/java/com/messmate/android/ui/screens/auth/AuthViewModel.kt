@@ -29,6 +29,7 @@ class AuthViewModel : ViewModel() {
                 val response = ApiClient.apiService.googleLogin(request)
                 
                 ApiClient.tokenManager.saveToken(response.token)
+                uploadFcmToken()
                 _authState.value = AuthState.Success(response.token)
             } catch (e: Exception) {
                 val errorMsg = e.localizedMessage ?: "Unknown error occurred"
@@ -45,6 +46,7 @@ class AuthViewModel : ViewModel() {
                 val response = ApiClient.apiService.register(request)
                 
                 ApiClient.tokenManager.saveToken(response.token)
+                uploadFcmToken()
                 _authState.value = AuthState.Success(response.token)
             } catch (e: Exception) {
                 val errorMsg = e.localizedMessage ?: "Registration failed"
@@ -61,11 +63,33 @@ class AuthViewModel : ViewModel() {
                 val response = ApiClient.apiService.login(request)
                 
                 ApiClient.tokenManager.saveToken(response.token)
+                uploadFcmToken()
                 _authState.value = AuthState.Success(response.token)
             } catch (e: Exception) {
                 val errorMsg = e.localizedMessage ?: "Login failed"
                 _authState.value = AuthState.Error(errorMsg)
             }
+        }
+    }
+
+    private fun uploadFcmToken() {
+        try {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val token = task.result
+                    if (token != null) {
+                        viewModelScope.launch {
+                            try {
+                                ApiClient.apiService.updateFcmToken(com.messmate.android.data.auth.FcmTokenRequest(token))
+                            } catch (e: Exception) {
+                                // Ignore failure, token will be re-sent later if needed or on next login
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // Firebase might not be initialized properly
         }
     }
 

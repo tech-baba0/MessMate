@@ -145,4 +145,20 @@ public class AuthController {
         userRepository.save(user);
         return ResponseEntity.ok(new MessageResponse(true, "User upgraded to ADMIN"));
     }
+
+    @PutMapping("/me/fcm-token")
+    public ResponseEntity<?> updateFcmToken(@RequestBody com.messmate.backend.dto.request.FcmTokenRequest request) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetailsImpl) {
+            String userId = ((UserDetailsImpl) principal).getId();
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                user.setFcmToken(request.getToken());
+                userRepository.save(user);
+                return ResponseEntity.ok(new MessageResponse(true, "FCM Token updated successfully"));
+            }
+        }
+        return ResponseEntity.badRequest().body(new MessageResponse(false, "User not authenticated"));
+    }
 }

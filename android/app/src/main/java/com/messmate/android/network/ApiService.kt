@@ -38,6 +38,10 @@ interface ApiService {
     @POST("auth/login")
     suspend fun login(@Body request: LoginRequest): AuthResponse
 
+    @PUT("auth/me/fcm-token")
+    suspend fun updateFcmToken(@Body request: com.messmate.android.data.auth.FcmTokenRequest)
+
+
     @GET("messes/my")
     suspend fun getMyMesses(): List<MessMembershipResponse>
 
@@ -81,7 +85,7 @@ interface ApiService {
         @Path("messId") messId: String
     ): MealSelectionDashboardResponse
 
-    @GET("admin/messes/{messId}/meals/dashboard")
+    @GET("messes/{messId}/meals/admin/dashboard")
     suspend fun getAdminMealDashboard(
         @Path("messId") messId: String
     ): AdminMealDashboardResponse

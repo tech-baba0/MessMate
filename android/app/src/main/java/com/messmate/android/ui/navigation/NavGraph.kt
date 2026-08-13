@@ -55,9 +55,7 @@ fun MessMateNavGraph(
                 onNavigateToMeal = { navController.navigate(Screen.MealSelection.route) },
                 onNavigateToBazar = { navController.navigate(Screen.BazarExpense.route) },
                 onNavigateToAdmin = { 
-                    navController.navigate(Screen.AdminDashboard.route) {
-                        popUpTo(Screen.Dashboard.route) { inclusive = true }
-                    }
+                    navController.navigate(Screen.AdminDashboard.route)
                 },
                 onNavigateToMenu = { navController.navigate(Screen.Menu.route) },
                 onNavigateToMealHistory = { navController.navigate(Screen.MealHistory.route) },

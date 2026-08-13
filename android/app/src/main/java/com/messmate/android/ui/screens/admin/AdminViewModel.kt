@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 
 sealed class AdminState {
     object Loading : AdminState()
@@ -34,14 +35,33 @@ class AdminViewModel : ViewModel() {
         viewModelScope.launch {
             _state.value = AdminState.Loading
             try {
-                // Fetch both API endpoints concurrently
-                val membersDeferred = async { ApiClient.apiService.getMessMembers(messId) }
-                val statsDeferred = async { ApiClient.apiService.getAdminMealDashboard(messId) }
-                
-                val members = membersDeferred.await()
-                val stats = statsDeferred.await()
-                
-                _state.value = AdminState.Success(members, stats)
+                // Use supervisorScope so that one failing call doesn't crash the other or the app
+                supervisorScope {
+                    val membersDeferred = async { ApiClient.apiService.getMessMembers(messId) }
+                    val statsDeferred = async { ApiClient.apiService.getAdminMealDashboard(messId) }
+                    
+                    val members = try {
+                        membersDeferred.await()
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
+                    
+                    val stats = try {
+                        statsDeferred.await()
+                    } catch (e: Exception) {
+                        // Fallback for 404 or other errors
+                        AdminMealDashboardResponse(
+                            todayLunchYes = 0, todayLunchNo = 0,
+                            todayDinnerYes = 0, todayDinnerNo = 0,
+                            totalLunchMeals = 0, totalDinnerMeals = 0,
+                            totalMealUnits = 0,
+                            lunchVotingStatus = "UNKNOWN",
+                            dinnerVotingStatus = "UNKNOWN"
+                        )
+                    }
+                    
+                    _state.value = AdminState.Success(members, stats)
+                }
             } catch (e: Exception) {
                 _state.value = AdminState.Error("Failed to fetch admin data: ${e.localizedMessage}")
             }
@@ -55,7 +75,7 @@ class AdminViewModel : ViewModel() {
                 ApiClient.apiService.approveMember(messId, memberId)
                 loadDashboard()
             } catch (e: Exception) {
-                // Ignore for now or handle locally
+                // Ignore or handle locally
             }
         }
     }
@@ -67,7 +87,7 @@ class AdminViewModel : ViewModel() {
                 ApiClient.apiService.rejectMember(messId, memberId)
                 loadDashboard()
             } catch (e: Exception) {
-                // Ignore for now or handle locally
+                // Ignore or handle locally
             }
         }
     }
@@ -79,7 +99,7 @@ class AdminViewModel : ViewModel() {
                 ApiClient.apiService.changeMemberRole(messId, memberId, newRole)
                 loadDashboard()
             } catch (e: Exception) {
-                // Ignore for now or handle locally
+                // Ignore or handle locally
             }
         }
     }

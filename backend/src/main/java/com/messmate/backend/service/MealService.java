@@ -39,6 +39,9 @@ public class MealService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private FcmService fcmService;
+
     public MealEntry toggleMeal(String messId, String userId, MealToggleRequest request) {
         Mess mess = messRepository.findById(messId)
                 .orElseThrow(() -> new RuntimeException("Mess not found"));
@@ -128,7 +131,31 @@ public class MealService {
             }
         }
 
-        return mealRepository.save(entry);
+        MealEntry savedEntry = mealRepository.save(entry);
+
+        // Fetch user pushing update
+        User actionUser = userRepository.findById(userId).orElse(null);
+        String actionUserName = actionUser != null ? actionUser.getName() : "A user";
+
+        // Notify admins
+        List<MessMember> members = messMemberRepository.findByMessId(messId);
+        List<MessMember> admins = members.stream()
+                .filter(m -> m.getRole() == com.messmate.backend.entity.Role.ROLE_ADMIN
+                        && "APPROVED".equals(m.getStatus()))
+                .collect(Collectors.toList());
+
+        for (MessMember adminMember : admins) {
+            User adminUser = userRepository.findById(adminMember.getUserId()).orElse(null);
+            if (adminUser != null && adminUser.getFcmToken() != null && !adminUser.getFcmToken().isEmpty()) {
+                String title = "Meal Update: " + actionUserName;
+                String body = actionUserName + " updated their meal for " + request.getDate() +
+                        ". Lunch: " + (savedEntry.getLunch() ? "YES" : "NO") +
+                        ", Dinner: " + (savedEntry.getDinner() ? "YES" : "NO");
+                fcmService.sendPushNotification(adminUser.getFcmToken(), title, body);
+            }
+        }
+
+        return savedEntry;
     }
 
     public MealStatusResponse getUserMealStatus(String messId, String userId, LocalDate date) {

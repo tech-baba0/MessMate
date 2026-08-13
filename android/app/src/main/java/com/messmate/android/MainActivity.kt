@@ -22,6 +22,19 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize()
                 ) {
                     val startDest = if (ApiClient.tokenManager.getToken() != null) {
+                        try {
+                            com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                                if (task.isSuccessful && task.result != null) {
+                                    androidx.lifecycle.lifecycleScope.launchWhenStarted {
+                                        try {
+                                            ApiClient.apiService.updateFcmToken(
+                                                com.messmate.android.data.auth.FcmTokenRequest(task.result!!)
+                                            )
+                                        } catch (e: Exception) {}
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {}
                         com.messmate.android.ui.navigation.Screen.Dashboard.route
                     } else {
                         com.messmate.android.ui.navigation.Screen.Login.route
