@@ -21,7 +21,12 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    MessMateNavGraph()
+                    val startDest = if (ApiClient.tokenManager.getToken() != null) {
+                        com.messmate.android.ui.navigation.Screen.Dashboard.route
+                    } else {
+                        com.messmate.android.ui.navigation.Screen.Login.route
+                    }
+                    MessMateNavGraph(startDestination = startDest)
                 }
             }
         }

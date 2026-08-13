@@ -34,10 +34,10 @@ fun MealSelectionScreen(
     var dinnerSelected by remember { mutableStateOf(false) }
     
     LaunchedEffect(state) {
-        if (state is MealState.Success) {
-            val meal = (state as MealState.Success).meal
-            lunchSelected = meal?.lunch ?: false
-            dinnerSelected = meal?.dinner ?: false
+        val currentState = state
+        if (currentState is MealState.Success) {
+            lunchSelected = currentState.lunchActive
+            dinnerSelected = currentState.dinnerActive
         }
     }
 
@@ -65,33 +65,50 @@ fun MealSelectionScreen(
                 modifier = Modifier.fillMaxWidth().padding(20.dp).clip(RoundedCornerShape(20.dp))
                     .background(MaterialTheme.colorScheme.surface).padding(20.dp)
             ) {
-                if (state is MealState.Loading) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                } else if (state is MealState.Error) {
-                    Text((state as MealState.Error).message, color = MaterialTheme.colorScheme.error)
-                } else {
-                    Column {
-                        Text("Today's Meals", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                            Text("Lunch", modifier = Modifier.weight(1f), fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Switch(checked = lunchSelected, onCheckedChange = { lunchSelected = it })
-                        }
-                        
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                            Text("Dinner", modifier = Modifier.weight(1f), fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Switch(checked = dinnerSelected, onCheckedChange = { dinnerSelected = it })
-                        }
-                        
-                        Spacer(modifier = Modifier.height(24.dp))
-                        
-                        Button(
-                            onClick = { viewModel.toggleMeal(lunchSelected, dinnerSelected) },
-                            modifier = Modifier.fillMaxWidth().height(50.dp),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Save Selection", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                when (val s = state) {
+                    is MealState.Loading -> {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
+                    is MealState.Error -> {
+                        Text(s.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.align(Alignment.Center))
+                    }
+                    is MealState.Success -> {
+                        Column {
+                            Text("Today's Meals", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                                Text("Lunch", modifier = Modifier.weight(1f), fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                                Switch(
+                                    checked = lunchSelected, 
+                                    onCheckedChange = { lunchSelected = it },
+                                    enabled = !s.isSaving
+                                )
+                            }
+                            
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                                Text("Dinner", modifier = Modifier.weight(1f), fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                                Switch(
+                                    checked = dinnerSelected, 
+                                    onCheckedChange = { dinnerSelected = it },
+                                    enabled = !s.isSaving
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(24.dp))
+                            
+                            Button(
+                                onClick = { viewModel.updateMeals(lunchSelected, dinnerSelected) },
+                                modifier = Modifier.fillMaxWidth().height(50.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                enabled = !s.isSaving
+                            ) {
+                                if (s.isSaving) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+                                } else {
+                                    Text("Save Selection", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
                         }
                     }
                 }

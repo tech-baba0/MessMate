@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
+import androidx.compose.material.icons.filled.ExitToApp
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
@@ -33,6 +35,7 @@ fun DashboardScreen(
     onNavigateToBazar: () -> Unit,
     onNavigateToAdmin: () -> Unit,
     onNavigateToMenu: () -> Unit,
+    onLogout: () -> Unit,
     viewModel: DashboardViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -47,8 +50,8 @@ fun DashboardScreen(
                     IconButton(onClick = { /*TODO*/ }) {
                         Icon(Icons.Default.Notifications, contentDescription = "Alerts", tint = Color.White)
                     }
-                    IconButton(onClick = { /*TODO*/ }) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile", tint = Color.White)
+                    IconButton(onClick = onLogout) {
+                        Icon(Icons.Default.ExitToApp, contentDescription = "Logout", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -240,7 +243,7 @@ fun DashboardScreen(
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.padding(horizontal = 20.dp, bottom = 8.dp)
+                        modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 8.dp)
                     )
                     TodayMenuCard(menu = todayMenuState)
                 }

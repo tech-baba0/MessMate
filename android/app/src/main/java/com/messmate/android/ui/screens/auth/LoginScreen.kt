@@ -1,5 +1,6 @@
 package com.messmate.android.ui.screens.auth
 
+import android.app.Activity
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -110,11 +111,8 @@ fun LoginScreen(
                         coroutineScope.launch {
                             try {
                                 val credentialManager = CredentialManager.create(context)
-                                val clientId = "401328638959-iuul43hom388ksi8b4gte30ar2j99efr.apps.googleusercontent.com" // TODO: Replace with your actual Web Client ID
-                                if (clientId == "401328638959-iuul43hom388ksi8b4gte30ar2j99efr.apps.googleusercontent.com") {
-                                    viewModel.setError("Developer Error: You must replace 'YOUR_ACTUAL_CLIENT_ID_PLACEHOLDER' with your actual Google Cloud Web Client ID in LoginScreen.kt.")
-                                    return@launch
-                                }
+                                // This MUST be a 'Web application' Client ID from Google Cloud Console
+                                val clientId = "401328638959-vlsk7a2c87ie2a9un0hd48ipfl17bvaa.apps.googleusercontent.com"
                                 
                                 val googleIdOption = GetGoogleIdOption.Builder()
                                     .setFilterByAuthorizedAccounts(false)
@@ -126,7 +124,13 @@ fun LoginScreen(
                                     .addCredentialOption(googleIdOption)
                                     .build()
                                 
-                                val result = credentialManager.getCredential(request = request, context = context)
+                                // Ensure context is an Activity
+                                val activityContext = context as? Activity ?: return@launch
+                                
+                                val result = credentialManager.getCredential(
+                                    request = request, 
+                                    context = activityContext
+                                )
                                 val credential = result.credential
                                 
                                 if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
@@ -135,10 +139,15 @@ fun LoginScreen(
                                 }
                             } catch (e: NoCredentialException) {
                                 viewModel.setError("No Google accounts found or you dismissed the dialog.")
-                                Log.e("Auth", "No Google accounts found or picker dismissed", e)
+                                Log.e("Auth", "No Google accounts found", e)
                             } catch (e: GetCredentialException) {
-                                viewModel.setError("Google authentication failed. Is your Client ID correct? Error: ${e.message}")
-                                Log.e("Auth", "Credential Manager error: ${e.message}", e)
+                                val friendlyMsg = if (e.message?.contains("cancelled") == true) {
+                                    "Sign-in failed. Please ensure your SHA-1 fingerprint and Package Name are correctly registered in Google Cloud Console."
+                                } else {
+                                    "Google authentication failed: ${e.message}"
+                                }
+                                viewModel.setError(friendlyMsg)
+                                Log.e("Auth", "Credential Manager error: [${e.type}] ${e.message}", e)
                             } catch (e: Exception) {
                                 viewModel.setError("An unexpected error occurred: ${e.message}")
                                 Log.e("Auth", "Unexpected error: ${e.message}", e)

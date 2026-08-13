@@ -11,6 +11,8 @@ import com.messmate.android.ui.screens.dashboard.DashboardScreen
 import com.messmate.android.ui.screens.meal.MealSelectionScreen
 import com.messmate.android.ui.screens.bazar.BazarExpenseScreen
 import com.messmate.android.ui.screens.admin.AdminDashboardScreen
+import com.messmate.android.ui.screens.admin.AdminMenuScreen
+import com.messmate.android.ui.screens.menu.MenuScreen
 
 @Composable
 fun MessMateNavGraph(
@@ -49,7 +51,14 @@ fun MessMateNavGraph(
             DashboardScreen(
                 onNavigateToMeal = { navController.navigate(Screen.MealSelection.route) },
                 onNavigateToBazar = { navController.navigate(Screen.BazarExpense.route) },
-                onNavigateToAdmin = { navController.navigate(Screen.AdminDashboard.route) }
+                onNavigateToAdmin = { navController.navigate(Screen.AdminDashboard.route) },
+                onNavigateToMenu = { navController.navigate(Screen.Menu.route) },
+                onLogout = {
+                    com.messmate.android.network.ApiClient.tokenManager.clearToken()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Dashboard.route) { inclusive = true }
+                    }
+                }
             )
         }
         composable(Screen.MealSelection.route) {
@@ -64,6 +73,17 @@ fun MessMateNavGraph(
         }
         composable(Screen.AdminDashboard.route) {
             AdminDashboardScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToAdminMenu = { navController.navigate(Screen.AdminMenu.route) }
+            )
+        }
+        composable(Screen.AdminMenu.route) {
+            AdminMenuScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.Menu.route) {
+            MenuScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

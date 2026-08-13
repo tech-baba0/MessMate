@@ -64,7 +64,7 @@ class DashboardViewModel : ViewModel() {
                 MessRepository.setCurrentMessId(mess.id)
                 
                 val balance = ApiClient.apiService.getMyBalance(mess.id)
-                _state.value = DashboardState.Success(balance, status)
+                _state.value = DashboardState.Success(balance, firstMember.role)
                 fetchTodayMenu(mess.id)
             } catch (e: Exception) {
                 _state.value = DashboardState.Error("Failed to load dashboard: ${e.localizedMessage}")

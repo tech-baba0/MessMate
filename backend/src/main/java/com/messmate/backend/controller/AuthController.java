@@ -56,10 +56,16 @@ public class AuthController {
             if (userOpt.isPresent()) {
                 user = userOpt.get();
                 user.setLastLogin(LocalDateTime.now());
+                if ("sumonpal2710@gmail.com".equalsIgnoreCase(email) && !user.getRoles().contains(Role.ROLE_ADMIN)) {
+                    user.getRoles().add(Role.ROLE_ADMIN);
+                }
                 user = userRepository.save(user);
             } else {
                 Set<Role> roles = new HashSet<>();
                 roles.add(Role.ROLE_USER);
+                if ("sumonpal2710@gmail.com".equalsIgnoreCase(email)) {
+                    roles.add(Role.ROLE_ADMIN);
+                }
 
                 user = User.builder()
                         .googleSubjectId(googleSubjectId)
@@ -99,5 +105,17 @@ public class AuthController {
             return ResponseEntity.badRequest()
                     .body(new MessageResponse(false, "Authentication failed: " + e.getMessage()));
         }
+    }
+
+    @PostMapping("/make-admin")
+    public ResponseEntity<?> makeAdmin(@RequestParam String email) {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body(new MessageResponse(false, "User not found"));
+        }
+        User user = userOpt.get();
+        user.getRoles().add(Role.ROLE_ADMIN);
+        userRepository.save(user);
+        return ResponseEntity.ok(new MessageResponse(true, "User upgraded to ADMIN"));
     }
 }

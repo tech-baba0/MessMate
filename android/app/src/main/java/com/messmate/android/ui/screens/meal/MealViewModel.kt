@@ -62,6 +62,14 @@ class MealViewModel : ViewModel() {
         val newLunch = if (isLunch) !currentState.lunchActive else currentState.lunchActive
         val newDinner = if (!isLunch) !currentState.dinnerActive else currentState.dinnerActive
         
+        updateMeals(newLunch, newDinner)
+    }
+
+    fun updateMeals(lunch: Boolean, dinner: Boolean) {
+        val messId = MessRepository.currentMessId.value ?: return
+        val currentState = _state.value
+        if (currentState !is MealState.Success) return
+
         val dateStr = getTodayDateString()
 
         viewModelScope.launch {
@@ -69,16 +77,16 @@ class MealViewModel : ViewModel() {
             try {
                 ApiClient.apiService.toggleMeal(
                     messId,
-                    MealToggleRequest(date = dateStr, lunch = newLunch, dinner = newDinner)
+                    MealToggleRequest(date = dateStr, lunch = lunch, dinner = dinner)
                 )
                 _state.value = currentState.copy(
-                    lunchActive = newLunch,
-                    dinnerActive = newDinner,
+                    lunchActive = lunch,
+                    dinnerActive = dinner,
                     isSaving = false
                 )
             } catch (e: Exception) {
                 _state.value = currentState.copy(isSaving = false)
-                // Reload from backend to revert toggle because it likely failed due to deadline
+                // Reload from backend to revert because it likely failed due to deadline
                 loadTodayMeal()
             }
         }
