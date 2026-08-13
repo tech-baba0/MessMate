@@ -14,10 +14,10 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/messes/{messId}/expenses")
 public class ExpenseController {
-    
+
     @Autowired
     private ExpenseService expenseService;
-    
+
     @PostMapping
     public ResponseEntity<?> addExpense(@PathVariable String messId, @Valid @RequestBody ExpenseRequest request) {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -30,5 +30,42 @@ public class ExpenseController {
             }
         }
         return ResponseEntity.badRequest().body(new MessageResponse(false, "User not authenticated"));
+    }
+
+    @GetMapping
+    public ResponseEntity<?> getAllExpenses(@PathVariable String messId) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetailsImpl) {
+            try {
+                return ResponseEntity.ok(expenseService.getExpenses(messId));
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(new MessageResponse(false, e.getMessage()));
+            }
+        }
+        return ResponseEntity.badRequest().body(new MessageResponse(false, "User not authenticated"));
+    }
+
+    @org.springframework.security.access.prepost.PreAuthorize("@messSecurity.isAdmin(authentication, #messId)")
+    @PutMapping("/{expenseId}")
+    public ResponseEntity<?> updateExpense(
+            @PathVariable String messId,
+            @PathVariable String expenseId,
+            @Valid @RequestBody ExpenseRequest request) {
+        try {
+            return ResponseEntity.ok(expenseService.updateExpense(messId, expenseId, request));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse(false, e.getMessage()));
+        }
+    }
+
+    @org.springframework.security.access.prepost.PreAuthorize("@messSecurity.isAdmin(authentication, #messId)")
+    @DeleteMapping("/{expenseId}")
+    public ResponseEntity<?> cancelExpense(@PathVariable String messId, @PathVariable String expenseId) {
+        try {
+            expenseService.cancelExpense(messId, expenseId);
+            return ResponseEntity.ok(new MessageResponse(true, "Expense cancelled successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse(false, e.getMessage()));
+        }
     }
 }

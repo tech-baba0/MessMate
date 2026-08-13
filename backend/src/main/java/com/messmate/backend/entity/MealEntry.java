@@ -21,14 +21,25 @@ import java.time.LocalDate;
 public class MealEntry {
     @Id
     private String id;
-    
+
     private String messId;
     private String userId;
-    
+
     private LocalDate date;
-    
+
     private Boolean lunch;
     private Boolean dinner;
-    
+
     private Double mealUnits; // e.g. Lunch=1.0, Dinner=1.0
+
+    private java.time.LocalDateTime createdTimestamp;
+    private java.time.LocalDateTime updatedTimestamp;
+
+    private Boolean lunchOriginalStatus;
+    private Boolean lunchUpdatedByAdmin;
+    private java.time.LocalDateTime lunchUpdatedAt;
+
+    private Boolean dinnerOriginalStatus;
+    private Boolean dinnerUpdatedByAdmin;
+    private java.time.LocalDateTime dinnerUpdatedAt;
 }

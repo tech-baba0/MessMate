@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,6 +36,7 @@ fun DashboardScreen(
     onNavigateToBazar: () -> Unit,
     onNavigateToAdmin: () -> Unit,
     onNavigateToMenu: () -> Unit,
+    onNavigateToMealHistory: () -> Unit,
     onLogout: () -> Unit,
     viewModel: DashboardViewModel = viewModel()
 ) {
@@ -214,6 +216,26 @@ fun DashboardScreen(
                     ) {
                         onNavigateToBazar()
                     }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    ActionCard(
+                        title = "History",
+                        icon = Icons.Default.History,
+                        color = Color(0xFF3B82F6),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        onNavigateToMealHistory()
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.weight(1f))
                 }
                 
                 if ((state as DashboardState.Success).role == "ROLE_ADMIN") {

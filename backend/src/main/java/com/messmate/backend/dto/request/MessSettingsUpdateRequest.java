@@ -10,4 +10,6 @@ public class MessSettingsUpdateRequest {
 
     @Pattern(regexp = "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$", message = "Invalid time format (HH:mm)")
     private String dinnerVotingDeadline;
+
+    private Integer advanceBookingDays;
 }

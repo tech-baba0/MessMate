@@ -4,6 +4,7 @@ import com.messmate.backend.dto.request.MealToggleRequest;
 import com.messmate.backend.dto.response.AdminMealDashboardResponse;
 import com.messmate.backend.dto.response.MealHistorySummaryResponse;
 import com.messmate.backend.dto.response.MealStatusResponse;
+import com.messmate.backend.dto.response.MealSelectionDashboardResponse;
 import com.messmate.backend.entity.MealEntry;
 import com.messmate.backend.entity.Mess;
 import com.messmate.backend.entity.MessMember;
@@ -50,6 +51,11 @@ public class MealService {
             throw new RuntimeException("Cannot edit past meal entries unless you are an Admin");
         }
 
+        int limit = mess.getAdvanceBookingDays() != null ? mess.getAdvanceBookingDays() : 7;
+        if (request.getDate().isAfter(todayIndia.plusDays(limit)) && !isAdmin) {
+            throw new RuntimeException("Cannot book meals more than " + limit + " days in advance");
+        }
+
         if (request.getDate().equals(todayIndia) && !isAdmin) {
             if (request.getLunch() != null) {
                 java.time.LocalTime lunchCutoff = java.time.LocalTime.parse(mess.getLunchVotingDeadline());
@@ -75,22 +81,46 @@ public class MealService {
             units += 1.0;
 
         MealEntry entry;
+        java.time.LocalDateTime nowAction = java.time.LocalDateTime.now(indiaZone);
         if (existingOpt.isPresent()) {
             entry = existingOpt.get();
-            if (request.getLunch() != null)
+            if (request.getLunch() != null) {
                 entry.setLunch(request.getLunch());
-            if (request.getDinner() != null)
+                entry.setLunchUpdatedByAdmin(isAdmin);
+                entry.setLunchUpdatedAt(nowAction);
+            }
+            if (request.getDinner() != null) {
                 entry.setDinner(request.getDinner());
+                entry.setDinnerUpdatedByAdmin(isAdmin);
+                entry.setDinnerUpdatedAt(nowAction);
+            }
             entry.setMealUnits(units);
+            entry.setUpdatedTimestamp(nowAction);
         } else {
+            Boolean originalLunch = mess.getDefaultLunchAvailability();
+            Boolean originalDinner = mess.getDefaultDinnerAvailability();
+
             entry = MealEntry.builder()
                     .messId(messId)
                     .userId(userId)
                     .date(request.getDate())
-                    .lunch(request.getLunch() != null ? request.getLunch() : mess.getDefaultLunchAvailability())
-                    .dinner(request.getDinner() != null ? request.getDinner() : mess.getDefaultDinnerAvailability())
+                    .lunch(request.getLunch() != null ? request.getLunch() : originalLunch)
+                    .dinner(request.getDinner() != null ? request.getDinner() : originalDinner)
                     .mealUnits(units)
+                    .createdTimestamp(nowAction)
+                    .updatedTimestamp(nowAction)
+                    .lunchOriginalStatus(originalLunch)
+                    .dinnerOriginalStatus(originalDinner)
                     .build();
+
+            if (request.getLunch() != null) {
+                entry.setLunchUpdatedByAdmin(isAdmin);
+                entry.setLunchUpdatedAt(nowAction);
+            }
+            if (request.getDinner() != null) {
+                entry.setDinnerUpdatedByAdmin(isAdmin);
+                entry.setDinnerUpdatedAt(nowAction);
+            }
         }
 
         return mealRepository.save(entry);
@@ -146,6 +176,44 @@ public class MealService {
                 .totalLunch(totalLunch)
                 .totalDinner(totalDinner)
                 .totalMeals(totalMeals)
+                .build();
+    }
+
+    public MealSelectionDashboardResponse getMealSelectionDashboard(String messId, String userId) {
+        Mess mess = messRepository.findById(messId).orElseThrow();
+        int limit = mess.getAdvanceBookingDays() != null ? mess.getAdvanceBookingDays() : 7;
+
+        java.time.ZoneId indiaZone = java.time.ZoneId.of("Asia/Kolkata");
+        LocalDate todayIndia = LocalDate.now(indiaZone);
+        LocalTime nowIndia = LocalTime.now(indiaZone);
+
+        // Month Summary
+        LocalDate firstDay = todayIndia.withDayOfMonth(1);
+        LocalDate lastDay = todayIndia.withDayOfMonth(todayIndia.lengthOfMonth());
+        MealHistorySummaryResponse monthSummary = getMealHistory(messId, userId, firstDay, lastDay);
+
+        // Recent history: last 5 days
+        LocalDate fiveDaysAgo = todayIndia.minusDays(5);
+        LocalDate yesterday = todayIndia.minusDays(1);
+        List<MealStatusResponse> recentHistoryList = new ArrayList<>();
+        if (!fiveDaysAgo.isAfter(yesterday)) {
+            recentHistoryList = getMealHistory(messId, userId, fiveDaysAgo, yesterday).getMeals();
+        }
+
+        // Future Selections: today to today + limit
+        LocalDate futureEnd = todayIndia.plusDays(limit);
+        List<MealStatusResponse> futureList = getMealHistory(messId, userId, todayIndia, futureEnd).getMeals();
+
+        return MealSelectionDashboardResponse.builder()
+                .advanceBookingDays(limit)
+                .lunchVotingDeadline(mess.getLunchVotingDeadline())
+                .dinnerVotingDeadline(mess.getDinnerVotingDeadline())
+                .currentServerTime(nowIndia.toString())
+                .currentMonthTotalMeals(monthSummary.getTotalMeals())
+                .currentMonthLunchCount(monthSummary.getTotalLunch())
+                .currentMonthDinnerCount(monthSummary.getTotalDinner())
+                .recentHistory(recentHistoryList)
+                .futureSelections(futureList)
                 .build();
     }
 

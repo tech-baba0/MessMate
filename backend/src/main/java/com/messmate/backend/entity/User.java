@@ -39,4 +39,7 @@ public class User {
     private LocalDateTime createdDate;
 
     private LocalDateTime lastLogin;
+
+    // Firebase Cloud Messaging token for push notifications
+    private String fcmToken;
 }

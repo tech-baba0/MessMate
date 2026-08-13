@@ -38,6 +38,16 @@ public class MealController {
         return ResponseEntity.badRequest().body(new MessageResponse(false, "User not authenticated"));
     }
 
+    @GetMapping("/dashboard")
+    public ResponseEntity<?> getMealSelectionDashboard(@PathVariable String messId) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetailsImpl) {
+            String userId = ((UserDetailsImpl) principal).getId();
+            return ResponseEntity.ok(mealService.getMealSelectionDashboard(messId, userId));
+        }
+        return ResponseEntity.badRequest().body(new MessageResponse(false, "User not authenticated"));
+    }
+
     @GetMapping("/today")
     public ResponseEntity<?> getTodayMealStatus(@PathVariable String messId) {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();

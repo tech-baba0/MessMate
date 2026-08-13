@@ -31,6 +31,9 @@ public class MessSettingsController {
         if (request.getDinnerVotingDeadline() != null) {
             mess.setDinnerVotingDeadline(request.getDinnerVotingDeadline());
         }
+        if (request.getAdvanceBookingDays() != null) {
+            mess.setAdvanceBookingDays(request.getAdvanceBookingDays());
+        }
 
         messRepository.save(mess);
         return ResponseEntity.ok(new MessageResponse(true, "Settings updated successfully"));

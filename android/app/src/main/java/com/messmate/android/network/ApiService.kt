@@ -62,6 +62,11 @@ interface ApiService {
         @Query("startDate") startDate: String,
         @Query("endDate") endDate: String
     ): com.messmate.android.data.meal.MealHistorySummaryResponse
+    
+    @GET("messes/{messId}/meals/dashboard")
+    suspend fun getMealSelectionDashboard(
+        @Path("messId") messId: String
+    ): com.messmate.android.data.meal.MealSelectionDashboardResponse
 
     @GET("admin/messes/{messId}/meals/dashboard")
     suspend fun getAdminMealDashboard(
@@ -94,4 +99,43 @@ interface ApiService {
         @Path("messId") messId: String,
         @Body request: com.messmate.android.data.expense.ExpenseRequest
     ): com.messmate.android.data.expense.ExpenseResponse
+
+    @GET("messes/{messId}/expenses")
+    suspend fun getAllExpenses(
+        @Path("messId") messId: String
+    ): List<com.messmate.android.data.expense.ExpenseResponse>
+
+    @PUT("messes/{messId}/expenses/{expenseId}")
+    suspend fun updateExpense(
+        @Path("messId") messId: String,
+        @Path("expenseId") expenseId: String,
+        @Body request: com.messmate.android.data.expense.ExpenseRequest
+    ): com.messmate.android.data.expense.ExpenseResponse
+
+    @DELETE("messes/{messId}/expenses/{expenseId}")
+    suspend fun cancelExpense(
+        @Path("messId") messId: String,
+        @Path("expenseId") expenseId: String
+    )
+    
+    // Settlement Endpoints
+    @POST("messes/{messId}/settlements/generate")
+    suspend fun generateSettlement(
+        @Path("messId") messId: String,
+        @Query("monthYear") monthYear: String
+    ): com.messmate.android.data.mess.MonthlySettlementResponse
+    
+    @POST("messes/{messId}/settlements/{id}/close")
+    suspend fun closeSettlement(
+        @Path("messId") messId: String,
+        @Path("id") id: String,
+        @Query("monthYear") monthYear: String
+    ): com.messmate.android.data.mess.MonthlySettlementResponse
+    
+    @POST("messes/{messId}/settlements/{id}/reopen")
+    suspend fun reopenSettlement(
+        @Path("messId") messId: String,
+        @Path("id") id: String,
+        @Query("monthYear") monthYear: String
+    ): com.messmate.android.data.mess.MonthlySettlementResponse
 }

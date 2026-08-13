@@ -28,6 +28,8 @@ public class Mess {
     private String lunchVotingDeadline; // e.g., "10:00"
     private String dinnerVotingDeadline; // e.g., "17:00"
 
+    private Integer advanceBookingDays; // default handled in logic or could be 7
+
     private String currency;
     private String expenseSplitMethod; // EQUAL, MEAL_BASED
 

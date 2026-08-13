@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.ExitToApp
 fun AdminDashboardScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAdminMenu: () -> Unit,
+    onNavigateToAdminExpense: () -> Unit,
+    onNavigateToAdminBill: () -> Unit,
     onLogout: () -> Unit,
     viewModel: AdminViewModel = viewModel()
 ) {
@@ -71,8 +73,16 @@ fun AdminDashboardScreen(
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
                         )
-                        Button(onClick = onNavigateToAdminMenu) {
-                            Text("Manage Menu")
+                        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Button(onClick = onNavigateToAdminMenu) {
+                                Text("Manage Menu")
+                            }
+                            Button(onClick = onNavigateToAdminExpense) {
+                                Text("Manage Expenses")
+                            }
+                            Button(onClick = onNavigateToAdminBill) {
+                                Text("Manage Bills")
+                            }
                         }
                     }
                     LazyColumn(
