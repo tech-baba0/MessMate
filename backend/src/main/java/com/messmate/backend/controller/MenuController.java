@@ -21,6 +21,15 @@ public class MenuController {
     @Autowired
     private MenuRepository menuRepository;
 
+    @Autowired
+    private com.messmate.backend.repository.MessMemberRepository messMemberRepository;
+
+    @Autowired
+    private com.messmate.backend.repository.UserRepository userRepository;
+
+    @Autowired
+    private com.messmate.backend.service.FcmService fcmService;
+
     // Normal Member Endpoints
     // (Assuming controller-level security checks if they are active members are
     // handled elsewhere, or we just trust the messId if they have it for now for
@@ -80,6 +89,28 @@ public class MenuController {
         }
 
         menuRepository.save(menu);
+
+        try {
+            java.util.List<com.messmate.backend.entity.MessMember> members = messMemberRepository.findByMessId(messId);
+            for (com.messmate.backend.entity.MessMember m : members) {
+                userRepository.findById(m.getUserId()).ifPresent(user -> {
+                    if (user.getFcmToken() != null && !user.getFcmToken().isEmpty()) {
+                        String dayName = java.time.DayOfWeek
+                                .of(request.getDayOfWeek() == 7 ? 7 : request.getDayOfWeek()).name();
+                        java.util.Map<String, String> data = new java.util.HashMap<>();
+                        data.put("type", "MENU_UPDATE");
+                        fcmService.sendPushNotificationWithData(
+                                user.getFcmToken(),
+                                "Menu Updated",
+                                "The admin has updated the menu for " + dayName + ".",
+                                data);
+                    }
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return ResponseEntity.ok(new MessageResponse(true, "Menu updated successfully"));
     }
 

@@ -87,7 +87,8 @@ interface ApiService {
 
     @GET("messes/{messId}/meals/admin/dashboard")
     suspend fun getAdminMealDashboard(
-        @Path("messId") messId: String
+        @Path("messId") messId: String,
+        @Query("date") date: String? = null
     ): AdminMealDashboardResponse
 
     @GET("messes/{messId}/menus/today")

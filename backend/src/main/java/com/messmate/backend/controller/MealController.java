@@ -86,7 +86,10 @@ public class MealController {
 
     @PreAuthorize("@messSecurity.isAdmin(authentication, #messId)")
     @GetMapping("/admin/dashboard")
-    public ResponseEntity<?> getAdminDashboard(@PathVariable String messId) {
-        return ResponseEntity.ok(mealService.getAdminMealDashboard(messId));
+    public ResponseEntity<?> getAdminDashboard(
+            @PathVariable String messId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        LocalDate targetDate = (date != null) ? date : LocalDate.now(java.time.ZoneId.of("Asia/Kolkata"));
+        return ResponseEntity.ok(mealService.getAdminMealDashboard(messId, targetDate));
     }
 }

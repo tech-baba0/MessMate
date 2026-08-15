@@ -259,7 +259,7 @@ public class MealService {
                 .build();
     }
 
-    public AdminMealDashboardResponse getAdminMealDashboard(String messId) {
+    public AdminMealDashboardResponse getAdminMealDashboard(String messId, LocalDate targetDate) {
         Mess mess = messRepository.findById(messId).orElseThrow();
         List<MessMember> allMembers = messMemberRepository.findByMessId(messId);
         List<MessMember> activeMembers = allMembers.stream()
@@ -272,11 +272,19 @@ public class MealService {
 
         LocalTime lunchCutoff = LocalTime.parse(mess.getLunchVotingDeadline());
         LocalTime dinnerCutoff = LocalTime.parse(mess.getDinnerVotingDeadline());
-        String lunchStatus = nowIndia.isAfter(lunchCutoff) ? "CLOSED" : "OPEN";
-        String dinnerStatus = nowIndia.isAfter(dinnerCutoff) ? "CLOSED" : "OPEN";
 
-        List<MealEntry> todayEntries = mealRepository.findByMessIdAndDate(messId, todayIndia);
-        Map<String, MealEntry> existingOptMap = todayEntries.stream()
+        String lunchStatus = "OPEN";
+        String dinnerStatus = "OPEN";
+        if (targetDate.isBefore(todayIndia)) {
+            lunchStatus = "CLOSED";
+            dinnerStatus = "CLOSED";
+        } else if (targetDate.equals(todayIndia)) {
+            lunchStatus = nowIndia.isAfter(lunchCutoff) ? "CLOSED" : "OPEN";
+            dinnerStatus = nowIndia.isAfter(dinnerCutoff) ? "CLOSED" : "OPEN";
+        }
+
+        List<MealEntry> targetEntries = mealRepository.findByMessIdAndDate(messId, targetDate);
+        Map<String, MealEntry> existingOptMap = targetEntries.stream()
                 .collect(Collectors.toMap(MealEntry::getUserId, e -> e));
 
         int todayLunchYes = 0;
@@ -289,12 +297,18 @@ public class MealService {
 
         for (MessMember member : activeMembers) {
             LocalDate join = member.getJoinDate() != null ? member.getJoinDate().toLocalDate() : LocalDate.MIN;
-            if (todayIndia.isBefore(join))
+            if (targetDate.isBefore(join))
                 continue;
 
             MealEntry e = existingOptMap.get(member.getUserId());
-            boolean lunch = e != null ? e.getLunch() : mess.getDefaultLunchAvailability();
-            boolean dinner = e != null ? e.getDinner() : mess.getDefaultDinnerAvailability();
+
+            // Only aggregate and display users who explicitly interacted with the voting
+            // system today.
+            if (e == null)
+                continue;
+
+            boolean lunch = e.getLunch();
+            boolean dinner = e.getDinner();
 
             if (lunch)
                 todayLunchYes++;
@@ -305,25 +319,19 @@ public class MealService {
             else
                 todayDinnerNo++;
 
-            String lunchTime = "Default";
-            String dinnerTime = "Default";
+            String lunchTime = "Unknown";
+            String dinnerTime = "Unknown";
 
-            if (e != null) {
-                if (e.getLunchUpdatedAt() != null) {
-                    lunchTime = e.getLunchUpdatedAt().format(timeFormatter);
-                } else if (e.getUpdatedTimestamp() != null) {
-                    lunchTime = e.getUpdatedTimestamp().format(timeFormatter);
-                }
+            if (e.getLunchUpdatedAt() != null) {
+                lunchTime = e.getLunchUpdatedAt().format(timeFormatter);
+            } else if (e.getUpdatedTimestamp() != null) {
+                lunchTime = e.getUpdatedTimestamp().format(timeFormatter);
+            }
 
-                if (e.getDinnerUpdatedAt() != null) {
-                    dinnerTime = e.getDinnerUpdatedAt().format(timeFormatter);
-                } else if (e.getUpdatedTimestamp() != null) {
-                    dinnerTime = e.getUpdatedTimestamp().format(timeFormatter);
-                }
-            } else {
-                // If they never saved, the default took precedence.
-                lunchTime = "Auto Default";
-                dinnerTime = "Auto Default";
+            if (e.getDinnerUpdatedAt() != null) {
+                dinnerTime = e.getDinnerUpdatedAt().format(timeFormatter);
+            } else if (e.getUpdatedTimestamp() != null) {
+                dinnerTime = e.getUpdatedTimestamp().format(timeFormatter);
             }
 
             User user = userRepository.findById(member.getUserId()).orElse(null);

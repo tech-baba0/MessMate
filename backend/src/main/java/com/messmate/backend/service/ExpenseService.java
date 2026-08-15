@@ -69,11 +69,14 @@ public class ExpenseService {
             for (MessMember m : members) {
                 if (!m.getUserId().equals(userId)) {
                     userRepository.findById(m.getUserId()).ifPresent(user -> {
-                        if (user.getFcmToken() != null) {
-                            fcmService.sendPushNotification(
+                        if (user.getFcmToken() != null && !user.getFcmToken().isEmpty()) {
+                            java.util.Map<String, String> data = new java.util.HashMap<>();
+                            data.put("type", "EXPENSE_ADDED");
+                            fcmService.sendPushNotificationWithData(
                                     user.getFcmToken(),
-                                    "New Expense Added",
-                                    "A new expense '" + request.getTitle() + "' was added by someone.");
+                                    "New Bazar Expense",
+                                    "An expense '" + request.getTitle() + "' was just added.",
+                                    data);
                         }
                     });
                 }

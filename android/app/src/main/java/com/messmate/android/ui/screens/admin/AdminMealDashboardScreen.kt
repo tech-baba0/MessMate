@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,13 +28,15 @@ fun AdminMealDashboardScreen(
     viewModel: AdminMealDashboardViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val selectedDate by viewModel.selectedDate.collectAsState()
+    val isToday = selectedDate == java.time.LocalDate.now()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Admin: Today's Meals") 
+                        Text("Admin: Meals") 
                         Spacer(modifier = Modifier.width(8.dp))
                         Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(Color.Red))
                         Spacer(modifier = Modifier.width(4.dp))
@@ -68,8 +71,24 @@ fun AdminMealDashboardScreen(
                             .padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("TODAY'S AGGREGATION", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = { viewModel.changeDate(-1) }) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Previous Day", tint = Color.White)
+                            }
+                            Text(text = "DATE: $selectedDate", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            IconButton(
+                                onClick = { viewModel.changeDate(1) },
+                                enabled = !isToday
+                            ) {
+                                Icon(Icons.Default.ArrowForward, contentDescription = "Next Day", tint = if (isToday) Color.Gray else Color.White)
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             DashboardStatCard(

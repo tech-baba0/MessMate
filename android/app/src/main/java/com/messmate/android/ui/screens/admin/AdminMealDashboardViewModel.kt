@@ -20,6 +20,9 @@ class AdminMealDashboardViewModel : ViewModel() {
     private val _state = MutableStateFlow<AdminMealState>(AdminMealState.Loading)
     val state: StateFlow<AdminMealState> = _state.asStateFlow()
 
+    private val _selectedDate = MutableStateFlow(java.time.LocalDate.now())
+    val selectedDate: StateFlow<java.time.LocalDate> = _selectedDate.asStateFlow()
+
     init {
         loadDashboard()
         viewModelScope.launch {
@@ -36,11 +39,17 @@ class AdminMealDashboardViewModel : ViewModel() {
         viewModelScope.launch {
             _state.value = AdminMealState.Loading
             try {
-                val dashboard = ApiClient.apiService.getAdminMealDashboard(messId)
+                val dateString = _selectedDate.value.toString()
+                val dashboard = ApiClient.apiService.getAdminMealDashboard(messId, dateString)
                 _state.value = AdminMealState.Success(dashboard)
             } catch (e: Exception) {
                 _state.value = AdminMealState.Error("Failed to fetch admin dashboard: ${e.message}")
             }
         }
+    }
+
+    fun changeDate(offsetDays: Long) {
+        _selectedDate.value = _selectedDate.value.plusDays(offsetDays)
+        loadDashboard()
     }
 }
