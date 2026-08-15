@@ -293,12 +293,8 @@ public class MealService {
                 continue;
 
             MealEntry e = existingOptMap.get(member.getUserId());
-            if (e == null || e.getIsSaved() == null || !e.getIsSaved()) {
-                continue; // Do not count users who haven't explicitly saved
-            }
-
-            boolean lunch = e.getLunch();
-            boolean dinner = e.getDinner();
+            boolean lunch = e != null ? e.getLunch() : mess.getDefaultLunchAvailability();
+            boolean dinner = e != null ? e.getDinner() : mess.getDefaultDinnerAvailability();
 
             if (lunch)
                 todayLunchYes++;
@@ -324,6 +320,10 @@ public class MealService {
                 } else if (e.getUpdatedTimestamp() != null) {
                     dinnerTime = e.getUpdatedTimestamp().format(timeFormatter);
                 }
+            } else {
+                // If they never saved, the default took precedence.
+                lunchTime = "Auto Default";
+                dinnerTime = "Auto Default";
             }
 
             User user = userRepository.findById(member.getUserId()).orElse(null);

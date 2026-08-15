@@ -83,7 +83,7 @@ class MealViewModel : ViewModel() {
             try {
                 ApiClient.apiService.toggleMeal(
                     messId,
-                    MealToggleRequest(date = currentState.selectedDateStr, lunch = lunch, dinner = dinner, isSaved = true)
+                    MealToggleRequest(date = currentState.selectedDateStr, lunch = lunch, dinner = dinner)
                 )
                 // Reload dashboard to get updated data seamlessly
                 val data = ApiClient.apiService.getMealSelectionDashboard(messId)

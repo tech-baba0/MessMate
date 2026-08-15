@@ -66,6 +66,17 @@ class DashboardViewModel : ViewModel() {
                 val balance = ApiClient.apiService.getMyBalance(mess.id)
                 _state.value = DashboardState.Success(balance, firstMember.role)
                 fetchTodayMenu(mess.id)
+                
+                com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        val token = task.result
+                        viewModelScope.launch {
+                            try {
+                                ApiClient.apiService.updateFcmToken(com.messmate.android.data.auth.FcmTokenRequest(token))
+                            } catch (e: Exception) {}
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 _state.value = DashboardState.Error("Failed to load dashboard: ${e.localizedMessage}")
             }

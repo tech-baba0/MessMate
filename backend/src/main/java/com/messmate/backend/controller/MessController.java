@@ -80,7 +80,7 @@ public class MessController {
         return updateMemberStatus(messId, memberId, "INACTIVE");
     }
 
-    @PreAuthorize("@messSecurity.isAdmin(authentication, #messId)")
+    @PreAuthorize("@messSecurity.isActiveMember(authentication, #messId)")
     @GetMapping("/{messId}/members")
     public ResponseEntity<?> getMessMembers(@PathVariable String messId) {
         // Implement get all members
