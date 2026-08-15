@@ -32,6 +32,8 @@ public class MealEntry {
 
     private Double mealUnits; // e.g. Lunch=1.0, Dinner=1.0
 
+    private Boolean isSaved;
+
     private java.time.LocalDateTime createdTimestamp;
     private java.time.LocalDateTime updatedTimestamp;
 

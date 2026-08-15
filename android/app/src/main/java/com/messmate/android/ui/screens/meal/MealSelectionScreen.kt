@@ -183,6 +183,16 @@ fun MealSelectionScreen(
                                         Text("Save Selection", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
+                                
+                                if (s.saveSuccess) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        "Meal saved successfully", 
+                                        color = Color(0xFF10B981), 
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                                    )
+                                }
                             }
                         }
 

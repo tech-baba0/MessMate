@@ -16,6 +16,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         super.onMessageReceived(message)
         Log.d("FCM", "Message received from: ${message.from}")
 
+        val type = message.data["type"]
+        if (type != null) {
+            FcmEventBus.emitEvent(type)
+        }
+
         message.notification?.let {
             Log.d("FCM", "Message Notification Body: ${it.body}")
             // Typically show notification here using NotificationManager

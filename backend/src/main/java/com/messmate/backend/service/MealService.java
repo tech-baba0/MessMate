@@ -102,6 +102,11 @@ public class MealService {
                 entry.setDinnerUpdatedByAdmin(isAdmin);
                 entry.setDinnerUpdatedAt(nowAction);
             }
+            if (request.getIsSaved() != null) {
+                entry.setIsSaved(request.getIsSaved());
+            } else {
+                entry.setIsSaved(true);
+            }
             entry.setMealUnits(units);
             entry.setUpdatedTimestamp(nowAction);
         } else {
@@ -114,6 +119,7 @@ public class MealService {
                     .date(request.getDate())
                     .lunch(request.getLunch() != null ? request.getLunch() : originalLunch)
                     .dinner(request.getDinner() != null ? request.getDinner() : originalDinner)
+                    .isSaved(request.getIsSaved() != null ? request.getIsSaved() : true)
                     .mealUnits(units)
                     .createdTimestamp(nowAction)
                     .updatedTimestamp(nowAction)
@@ -148,10 +154,14 @@ public class MealService {
             User adminUser = userRepository.findById(adminMember.getUserId()).orElse(null);
             if (adminUser != null && adminUser.getFcmToken() != null && !adminUser.getFcmToken().isEmpty()) {
                 String title = "Meal Update: " + actionUserName;
-                String body = actionUserName + " updated their meal for " + request.getDate() +
+                String body = actionUserName + " saved their meal for " + request.getDate() +
                         ". Lunch: " + (savedEntry.getLunch() ? "YES" : "NO") +
                         ", Dinner: " + (savedEntry.getDinner() ? "YES" : "NO");
-                fcmService.sendPushNotification(adminUser.getFcmToken(), title, body);
+
+                java.util.Map<String, String> data = new java.util.HashMap<>();
+                data.put("type", "MEAL_UPDATE");
+
+                fcmService.sendPushNotificationWithData(adminUser.getFcmToken(), title, body, data);
             }
         }
 
@@ -283,8 +293,12 @@ public class MealService {
                 continue;
 
             MealEntry e = existingOptMap.get(member.getUserId());
-            boolean lunch = e != null ? e.getLunch() : mess.getDefaultLunchAvailability();
-            boolean dinner = e != null ? e.getDinner() : mess.getDefaultDinnerAvailability();
+            if (e == null || e.getIsSaved() == null || !e.getIsSaved()) {
+                continue; // Do not count users who haven't explicitly saved
+            }
+
+            boolean lunch = e.getLunch();
+            boolean dinner = e.getDinner();
 
             if (lunch)
                 todayLunchYes++;

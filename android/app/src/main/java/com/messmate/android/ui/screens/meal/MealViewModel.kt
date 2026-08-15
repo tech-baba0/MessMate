@@ -21,7 +21,8 @@ sealed class MealState {
         val selectedDateStr: String,
         val lunchActive: Boolean,
         val dinnerActive: Boolean,
-        val isSaving: Boolean = false
+        val isSaving: Boolean = false,
+        val saveSuccess: Boolean = false
     ) : MealState()
     data class Error(val message: String) : MealState()
 }
@@ -82,7 +83,7 @@ class MealViewModel : ViewModel() {
             try {
                 ApiClient.apiService.toggleMeal(
                     messId,
-                    MealToggleRequest(date = currentState.selectedDateStr, lunch = lunch, dinner = dinner)
+                    MealToggleRequest(date = currentState.selectedDateStr, lunch = lunch, dinner = dinner, isSaved = true)
                 )
                 // Reload dashboard to get updated data seamlessly
                 val data = ApiClient.apiService.getMealSelectionDashboard(messId)
@@ -91,8 +92,15 @@ class MealViewModel : ViewModel() {
                     dashboardData = data,
                     lunchActive = lunch,
                     dinnerActive = dinner,
-                    isSaving = false
+                    isSaving = false,
+                    saveSuccess = true
                 )
+                
+                // Clear success message after 3 seconds
+                kotlinx.coroutines.delay(3000)
+                if (_state.value is MealState.Success) {
+                    _state.value = (_state.value as MealState.Success).copy(saveSuccess = false)
+                }
             } catch (e: Exception) {
                 _state.value = currentState.copy(isSaving = false)
                 // Reload on error to reset UI to server state

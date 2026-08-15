@@ -22,6 +22,13 @@ class AdminMealDashboardViewModel : ViewModel() {
 
     init {
         loadDashboard()
+        viewModelScope.launch {
+            com.messmate.android.service.FcmEventBus.events.collect { type ->
+                if (type == "MEAL_UPDATE") {
+                    loadDashboard()
+                }
+            }
+        }
     }
 
     fun loadDashboard() {

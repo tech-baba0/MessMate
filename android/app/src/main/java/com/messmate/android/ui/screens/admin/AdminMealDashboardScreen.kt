@@ -4,6 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -27,7 +31,15 @@ fun AdminMealDashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Admin: Today's Meals") },
+                title = { 
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Admin: Today's Meals") 
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(Color.Red))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Live", color = Color.Red, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -90,6 +102,33 @@ fun AdminMealDashboardScreen(
                                 Text("Total Dinner Meals: ${s.dashboard.totalDinnerMeals}")
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text("Total Meal Units: ${s.dashboard.totalMealUnits}", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text("MEMBER DETAILS", fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.align(Alignment.Start))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        val members = s.dashboard.memberDetails ?: emptyList()
+                        if (members.isEmpty()) {
+                            Text("No users have saved their meals today yet.", color = Color.Gray)
+                        } else {
+                            LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                                items(members) { member ->
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                    ) {
+                                        Column(modifier = Modifier.padding(12.dp)) {
+                                            Text(member.userName, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                Text("Lunch: ${if (member.lunch) "YES" else "NO"} (${member.lunchUpdatedAt})", fontSize = 12.sp, color = if (member.lunch) Color(0xFF10B981) else Color.Gray)
+                                                Text("Dinner: ${if (member.dinner) "YES" else "NO"} (${member.dinnerUpdatedAt})", fontSize = 12.sp, color = if (member.dinner) Color(0xFF10B981) else Color.Gray)
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

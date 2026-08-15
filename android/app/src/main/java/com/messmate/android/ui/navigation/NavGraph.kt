@@ -105,7 +105,10 @@ fun MessMateNavGraph(
             )
         }
         composable(Screen.AdminExpense.route) {
-            AdminExpenseScreen(onNavigateBack = { navController.popBackStack() })
+            AdminExpenseScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToAddExpense = { navController.navigate("add_bazar_expense") }
+            )
         }
         composable(Screen.AdminBill.route) {
             AdminBillScreen(onNavigateBack = { navController.popBackStack() })

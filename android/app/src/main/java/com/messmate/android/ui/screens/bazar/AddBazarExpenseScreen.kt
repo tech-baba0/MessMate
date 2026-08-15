@@ -31,7 +31,13 @@ fun AddBazarExpenseScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val members by viewModel.members.collectAsState()
-
+    
+    val checkedMembers = remember { mutableStateMapOf<String, Boolean>() }
+    LaunchedEffect(members) {
+        if (checkedMembers.isEmpty()) {
+            members.forEach { checkedMembers[it.userId] = true }
+        }
+    }
     var title by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var paidBy by remember { mutableStateOf("") }
@@ -275,83 +281,62 @@ fun AddBazarExpenseScreen(
                 }
                 
                 item {
+                    val totalAmt = amount.toDoubleOrNull() ?: 0.0
+                    val checkedCount = checkedMembers.values.count { it }
+                    val splitAmount = if (checkedCount > 0) totalAmt / checkedCount else 0.0
+
                     Divider(color = Color.DarkGray, modifier = Modifier.padding(vertical = 16.dp))
-                    Text("Split Expense Configuration", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = checkedCount > 0 && checkedCount == members.size,
+                                onCheckedChange = { isChecked ->
+                                    members.forEach { checkedMembers[it.userId] = isChecked }
+                                },
+                                colors = CheckboxDefaults.colors(checkedColor = Color(0xFF3B82F6))
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Split", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        }
+                        Text("Equally ⌄", color = Color.LightGray, fontSize = 16.sp)
+                    }
+                    
                     Spacer(modifier = Modifier.height(12.dp))
                     
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        val splitMethodName = splitMethods.find { it.first == splitMethod }?.second ?: "Auto Split by Meals"
-                        OutlinedTextField(
-                            value = splitMethodName,
-                            onValueChange = {},
-                            label = { Text("Split Method") },
-                            readOnly = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            trailingIcon = {
-                                IconButton(onClick = { showSplitMenu = true }) {
-                                    Icon(Icons.Default.ArrowDropDown, "Select Split")
-                                }
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = inputBgColor,
-                                unfocusedContainerColor = inputBgColor,
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White
-                            )
-                        )
-                        DropdownMenu(
-                            expanded = showSplitMenu,
-                            onDismissRequest = { showSplitMenu = false },
-                            modifier = Modifier.fillMaxWidth(0.9f)
-                        ) {
-                            splitMethods.forEach { m ->
-                                DropdownMenuItem(
-                                    text = { Text(m.second) },
-                                    onClick = { 
-                                        splitMethod = m.first
-                                        showSplitMenu = false
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = inputBgColor),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column {
+                            members.forEach { member ->
+                                val isChecked = checkedMembers[member.userId] ?: false
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { checkedMembers[member.userId] = !isChecked }
+                                        .padding(vertical = 8.dp, horizontal = 12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Checkbox(
+                                            checked = isChecked,
+                                            onCheckedChange = { checkedMembers[member.userId] = it },
+                                            colors = CheckboxDefaults.colors(
+                                                checkedColor = Color(0xFF3B82F6),
+                                                uncheckedColor = Color.Gray
+                                            )
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(member.name, color = Color.White, fontSize = 16.sp)
                                     }
-                                )
-                            }
-                        }
-                    }
-                }
-                
-                if (splitMethod == "AUTO_MEAL") {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            val mealScopeName = mealScopes.find { it.first == mealScope }?.second ?: "Both"
-                            OutlinedTextField(
-                                value = mealScopeName,
-                                onValueChange = {},
-                                label = { Text("Meal Target") },
-                                readOnly = true,
-                                modifier = Modifier.fillMaxWidth(),
-                                trailingIcon = {
-                                    IconButton(onClick = { showMealScopeMenu = true }) {
-                                        Icon(Icons.Default.ArrowDropDown, "Select Meal")
-                                    }
-                                },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedContainerColor = inputBgColor,
-                                    unfocusedContainerColor = inputBgColor,
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White
-                                )
-                            )
-                            DropdownMenu(
-                                expanded = showMealScopeMenu,
-                                onDismissRequest = { showMealScopeMenu = false },
-                                modifier = Modifier.fillMaxWidth(0.9f)
-                            ) {
-                                mealScopes.forEach { m ->
-                                    DropdownMenuItem(
-                                        text = { Text(m.second) },
-                                        onClick = { 
-                                            mealScope = m.first
-                                            showMealScopeMenu = false
-                                        }
-                                    )
+                                    val displayAmount = if (isChecked) splitAmount else 0.0
+                                    Text("₹%.2f".format(displayAmount), color = Color.White, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -362,16 +347,24 @@ fun AddBazarExpenseScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
+                            val totalAmt = amount.toDoubleOrNull() ?: 0.0
+                            val checkedCount = checkedMembers.values.count { it }
+                            val splitAmount = if (checkedCount > 0) totalAmt / checkedCount else 0.0
+                            val customSplitsList = members
+                                .filter { checkedMembers[it.userId] == true }
+                                .map { com.messmate.android.data.expense.CustomSplit(it.userId, amount = splitAmount) }
+                                
                             val request = ExpenseRequest(
                                 title = title,
                                 description = notes.ifBlank { null },
                                 date = date,
                                 category = category,
-                                mealScope = mealScope,
+                                mealScope = null,
                                 paidBy = paidBy.ifBlank { null },
-                                totalAmount = amount.toDoubleOrNull() ?: 0.0,
-                                splitMethod = splitMethod,
-                                items = emptyList()
+                                totalAmount = totalAmt,
+                                splitMethod = "CUSTOM_FIXED",
+                                items = emptyList(),
+                                customSplits = customSplitsList
                             )
                             viewModel.calculatePreview(request)
                         },

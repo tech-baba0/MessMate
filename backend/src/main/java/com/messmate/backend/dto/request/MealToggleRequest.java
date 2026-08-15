@@ -8,7 +8,8 @@ import java.time.LocalDate;
 public class MealToggleRequest {
     @NotNull
     private LocalDate date;
-    
+
     private Boolean lunch;
     private Boolean dinner;
+    private Boolean isSaved;
 }

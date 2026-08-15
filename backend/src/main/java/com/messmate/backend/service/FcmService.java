@@ -60,4 +60,31 @@ public class FcmService {
             System.err.println("Firebase message delivery failed: " + e.getMessage());
         }
     }
+
+    public void sendPushNotificationWithData(String token, String title, String body,
+            java.util.Map<String, String> data) {
+        if (token == null || token.isEmpty()) {
+            return;
+        }
+
+        try {
+            if (FirebaseApp.getApps().isEmpty()) {
+                return; // Not initialized
+            }
+
+            Message message = Message.builder()
+                    .setToken(token)
+                    .setNotification(Notification.builder()
+                            .setTitle(title)
+                            .setBody(body)
+                            .build())
+                    .putAllData(data)
+                    .build();
+
+            String response = FirebaseMessaging.getInstance().send(message);
+            System.out.println("Successfully sent data message to " + token + ": " + response);
+        } catch (Exception e) {
+            System.err.println("Firebase data message delivery failed: " + e.getMessage());
+        }
+    }
 }
