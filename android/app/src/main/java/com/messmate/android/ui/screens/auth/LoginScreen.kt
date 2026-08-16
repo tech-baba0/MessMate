@@ -1,6 +1,8 @@
 package com.messmate.android.ui.screens.auth
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -25,6 +27,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import kotlinx.coroutines.launch
+
+// Helper to find Activity from Context
+fun Context.findActivity(): Activity? {
+    var context = this
+    while (context is ContextWrapper) {
+        if (context is Activity) return context
+        context = context.baseContext
+    }
+    return null
+}
 
 @Composable
 fun LoginScreen(
@@ -102,7 +114,9 @@ fun LoginScreen(
                     Text(
                         text = (authState as AuthState.Error).message,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        modifier = Modifier.padding(bottom = 16.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        fontSize = 14.sp
                     )
                 }
 
@@ -111,8 +125,9 @@ fun LoginScreen(
                         coroutineScope.launch {
                             try {
                                 val credentialManager = CredentialManager.create(context)
-                                // This MUST be a 'Web application' Client ID from Google Cloud Console
-                                val clientId = "401328638959-vlsk7a2c87ie2a9un0hd48ipfl17bvaa.apps.googleusercontent.com"
+                                
+                                // This MUST be the "Web Client ID" from Google Cloud Console
+                                val clientId = "163178269203-lv2n95ek4bch59qvs87bed523m5nhe8e.apps.googleusercontent.com"
                                 
                                 val googleIdOption = GetGoogleIdOption.Builder()
                                     .setFilterByAuthorizedAccounts(false)
@@ -124,8 +139,7 @@ fun LoginScreen(
                                     .addCredentialOption(googleIdOption)
                                     .build()
                                 
-                                // Ensure context is an Activity
-                                val activityContext = context as? Activity ?: return@launch
+                                val activityContext = context.findActivity() ?: return@launch
                                 
                                 val result = credentialManager.getCredential(
                                     request = request, 
@@ -138,18 +152,21 @@ fun LoginScreen(
                                     viewModel.loginWithGoogle(googleIdTokenCredential.idToken)
                                 }
                             } catch (e: NoCredentialException) {
-                                viewModel.setError("No Google accounts found or you dismissed the dialog.")
+                                viewModel.setError("No Google accounts found on this device.")
                                 Log.e("Auth", "No Google accounts found", e)
                             } catch (e: GetCredentialException) {
-                                val friendlyMsg = if (e.message?.contains("cancelled") == true) {
-                                    "Sign-in failed. Please ensure your SHA-1 fingerprint and Package Name are correctly registered in Google Cloud Console."
-                                } else {
-                                    "Google authentication failed: ${e.message}"
+                                val friendlyMsg = when {
+                                    e.message?.contains("28444") == true -> 
+                                        "Developer console is not set up correctly (Error 28444). Please ensure your SHA-1 fingerprint is added to Firebase."
+                                    e.message?.contains("cancelled", ignoreCase = true) == true ||
+                                    e.type.contains("TYPE_USER_CANCELED") == true -> 
+                                        "Sign-in cancelled."
+                                    else -> "Google Sign-In failed: ${e.message}"
                                 }
                                 viewModel.setError(friendlyMsg)
                                 Log.e("Auth", "Credential Manager error: [${e.type}] ${e.message}", e)
                             } catch (e: Exception) {
-                                viewModel.setError("An unexpected error occurred: ${e.message}")
+                                viewModel.setError("Error: ${e.message}")
                                 Log.e("Auth", "Unexpected error: ${e.message}", e)
                             }
                         }

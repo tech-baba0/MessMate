@@ -1,5 +1,6 @@
 package com.messmate.android.ui.screens.auth
 
+import android.app.Activity
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -16,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
@@ -91,7 +93,9 @@ fun RegisterScreen(
                     Text(
                         text = (authState as AuthState.Error).message,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        modifier = Modifier.padding(bottom = 16.dp),
+                        textAlign = TextAlign.Center,
+                        fontSize = 14.sp
                     )
                 }
                 
@@ -152,9 +156,13 @@ fun RegisterScreen(
                         coroutineScope.launch {
                             try {
                                 val credentialManager = CredentialManager.create(context)
+                                
+                                // Consistent Web Client ID for Project 163178269203
+                                val clientId = "163178269203-lv2n95ek4bch59qvs87bed523m5nhe8e.apps.googleusercontent.com"
+                                
                                 val googleIdOption = GetGoogleIdOption.Builder()
                                     .setFilterByAuthorizedAccounts(false)
-                                    .setServerClientId("YOUR_ACTUAL_CLIENT_ID_PLACEHOLDER") // Replace with Web Client ID
+                                    .setServerClientId(clientId)
                                     .setAutoSelectEnabled(false)
                                     .build()
 
@@ -162,18 +170,36 @@ fun RegisterScreen(
                                     .addCredentialOption(googleIdOption)
                                     .build()
                                 
-                                val result = credentialManager.getCredential(request = request, context = context)
+                                val activityContext = context.findActivity() ?: return@launch
+                                
+                                val result = credentialManager.getCredential(
+                                    request = request, 
+                                    context = activityContext
+                                )
                                 val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(result.credential.data)
                                 viewModel.loginWithGoogle(googleIdTokenCredential.idToken)
                             } catch (e: NoCredentialException) {
-                                Log.e("Auth", "No accounts found. Check Client ID and SHA-1.")
+                                viewModel.setError("No Google accounts found.")
+                                Log.e("Auth", "No accounts found")
+                            } catch (e: GetCredentialException) {
+                                val friendlyMsg = when {
+                                    e.message?.contains("28444") == true -> 
+                                        "Setup Error [28444]: Register your SHA-1 in Firebase Console."
+                                    e.message?.contains("cancelled", ignoreCase = true) == true -> 
+                                        "Sign-in cancelled."
+                                    else -> "Google Sign-In failed: ${e.message}"
+                                }
+                                viewModel.setError(friendlyMsg)
+                                Log.e("Auth", "Error: ${e.message}")
                             } catch (e: Exception) {
+                                viewModel.setError("Error: ${e.message}")
                                 Log.e("Auth", "Error: ${e.message}")
                             }
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = authState !is AuthState.Loading
                 ) {
                     Text("Continue with Google", color = Color(0xFF4F46E5))
                 }

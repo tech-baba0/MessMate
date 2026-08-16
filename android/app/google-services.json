@@ -12,7 +12,20 @@
           "package_name": "com.messmate.android"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "163178269203-1e61cs211mada96mgak21q6er3b9rj2f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.messmate.android",
+            "certificate_hash": "57882dce09a89a39ca316138b917251ead070885"
+          }
+        },
+        {
+          "client_id": "163178269203-lv2n95ek4bch59qvs87bed523m5nhe8e.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBnhi_mzAxJk28RHetZo4WZ3MIZWA8F5ZE"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "163178269203-lv2n95ek4bch59qvs87bed523m5nhe8e.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

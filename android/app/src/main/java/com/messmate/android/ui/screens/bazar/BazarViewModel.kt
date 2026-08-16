@@ -54,7 +54,7 @@ class BazarViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val list = ApiClient.apiService.getMessMembers(messId)
-                _members.value = list.filter { it.status == "APPROVED" && (it.role == "ROLE_USER" || it.role == "USER") }
+                _members.value = list.filter { it.status != "PENDING" }
             } catch (e: Exception) {
                 // Ignore
             }
