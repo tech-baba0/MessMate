@@ -1,5 +1,7 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
 package com.messmate.android.ui.screens.admin
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -10,9 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,11 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.messmate.android.data.mess.MessMemberResponse
 import com.messmate.android.data.meal.MemberMealDetailResponse
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminDashboardScreen(
     onNavigateBack: () -> Unit,
@@ -44,13 +40,22 @@ fun AdminDashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Admin Dashboard", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { 
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Admin Panel", color = Color.White, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        LiveIndicator()
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
                 actions = {
+                    IconButton(onClick = { viewModel.loadDashboard() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = Color.White)
+                    }
                     IconButton(onClick = onLogout) {
                         Icon(Icons.Default.ExitToApp, contentDescription = "Logout", tint = Color.White)
                     }
@@ -83,38 +88,62 @@ fun AdminDashboardScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // 1. Meal Stats Section
+                        // 1. Total Meal Count (Live)
                         item {
                             val stats = s.mealDashboard
+                            val totalToday = stats.todayLunchYes + stats.todayDinnerYes
+                            
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(20.dp),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                shape = RoundedCornerShape(24.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                             ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text("Today's Meal Overview", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        StatBox(title = "Lunch", yesCount = stats.todayLunchYes, status = stats.lunchVotingStatus, modifier = Modifier.weight(1f))
-                                        StatBox(title = "Dinner", yesCount = stats.todayDinnerYes, status = stats.dinnerVotingStatus, modifier = Modifier.weight(1f))
-                                    }
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Button(
-                                        onClick = { showDetailsDialog = true },
-                                        modifier = Modifier.fillMaxWidth().height(40.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                                        shape = RoundedCornerShape(8.dp)
+                                Column(
+                                    modifier = Modifier.padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("TOTAL MEALS TODAY", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = "$totalToday",
+                                        color = Color.White,
+                                        fontSize = 56.sp,
+                                        fontWeight = FontWeight.Black
+                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("View Detailed Logs", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                        Icon(Icons.Default.TrendingUp, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Live updates active", color = Color(0xFF10B981), fontSize = 12.sp, fontWeight = FontWeight.Medium)
                                     }
                                 }
                             }
                         }
 
-                        // 2. Quick Actions Grid
+                        // 2. Meal Stats Section
                         item {
-                            Text("Management Controls", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                            val stats = s.mealDashboard
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                StatBox(title = "Lunch", yesCount = stats.todayLunchYes, status = stats.lunchVotingStatus, modifier = Modifier.weight(1f))
+                                StatBox(title = "Dinner", yesCount = stats.todayDinnerYes, status = stats.dinnerVotingStatus, modifier = Modifier.weight(1f))
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(
+                                onClick = { showDetailsDialog = true },
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("View Member Detailed Logs", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        // 3. Quick Actions
+                        item {
+                            Text("Management", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 QuickActionCard(icon = Icons.Default.RestaurantMenu, title = "Menu", onClick = onNavigateToAdminMenu, modifier = Modifier.weight(1f))
@@ -123,10 +152,10 @@ fun AdminDashboardScreen(
                             }
                         }
 
-                        // 3. Pending Members (Highlight if any)
+
+                        // 4. Pending Approvals
                         if (pendingMembers.isNotEmpty()) {
                             item {
-                                Spacer(modifier = Modifier.height(8.dp))
                                 Text("Pending Approvals (${pendingMembers.size})", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEF4444))
                             }
                             items(pendingMembers) { member ->
@@ -139,31 +168,60 @@ fun AdminDashboardScreen(
                             }
                         }
 
-                        // 4. Active Members
-                        if (activeMembers.isNotEmpty()) {
-                            item {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text("Active Members (${activeMembers.size})", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                            }
-                            items(activeMembers) { member ->
-                                MemberCard(
-                                    member = member,
-                                    onApprove = { },
-                                    onReject = { },
-                                    onPromote = { viewModel.changeRole(member.userId, "ROLE_ADMIN") }
-                                )
-                            }
+                        // 5. Active Members
+                        item {
+                            Text("Active Members (${activeMembers.size})", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        }
+                        items(activeMembers) { member ->
+                            MemberCard(
+                                member = member,
+                                onApprove = { },
+                                onReject = { },
+                                onPromote = { viewModel.changeRole(member.userId, "ROLE_ADMIN") }
+                            )
                         }
                     }
+                    
                     if (showDetailsDialog && s.mealDashboard.memberDetails != null) {
                         DetailedLogsModal(
                             details = s.mealDashboard.memberDetails,
                             onDismiss = { showDetailsDialog = false }
                         )
                     }
-                }
-            }
-        }
+                } // AdminState.Success
+            } // when
+        } // Box
+    }
+}
+
+@Composable
+fun LiveIndicator() {
+    val infiniteTransition = rememberInfiniteTransition(label = "live")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(Color.Red.copy(alpha = 0.1f))
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(Color.Red.copy(alpha = alpha))
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text("LIVE", color = Color.Red, fontSize = 10.sp, fontWeight = FontWeight.Black)
     }
 }
 
@@ -171,17 +229,18 @@ fun AdminDashboardScreen(
 fun StatBox(title: String, yesCount: Int, status: String, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            .padding(12.dp),
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(4.dp))
-        Text("$yesCount Opted", fontSize = 20.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+        Text("$yesCount", fontSize = 28.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+        Text("YES", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
         Spacer(modifier = Modifier.height(4.dp))
         val statusColor = if (status == "OPEN") Color(0xFF10B981) else Color(0xFFEF4444)
-        Text(status, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = statusColor)
+        Text(status, fontSize = 10.sp, fontWeight = FontWeight.Black, color = statusColor)
     }
 }
 
@@ -189,10 +248,10 @@ fun StatBox(title: String, yesCount: Int, status: String, modifier: Modifier = M
 fun QuickActionCard(icon: ImageVector, title: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier
-            .height(85.dp)
+            .height(90.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
@@ -200,9 +259,9 @@ fun QuickActionCard(icon: ImageVector, title: String, onClick: () -> Unit, modif
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(icon, contentDescription = title, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(28.dp))
+            Icon(icon, contentDescription = title, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(32.dp))
             Spacer(modifier = Modifier.height(8.dp))
-            Text(title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Text(title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
         }
     }
 }
@@ -217,29 +276,29 @@ fun MemberCard(
     val isPending = member.status == "PENDING"
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isPending) 4.dp else 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isPending) 6.dp else 1.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(44.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.secondaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(member.name.take(1).uppercase(), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                    Text(member.name.take(1).uppercase(), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = member.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Text(text = member.email, color = Color.Gray, fontSize = 13.sp)
                 }
                 if (member.role.contains("ADMIN")) {
-                    Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color(0xFF3B82F6).copy(alpha=0.1f)).padding(horizontal = 8.dp, vertical = 4.dp)) {
-                        Text("ADMIN", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF3B82F6))
+                    Badge(containerColor = Color(0xFF3B82F6).copy(alpha = 0.1f)) {
+                        Text("ADMIN", color = Color(0xFF3B82F6), modifier = Modifier.padding(4.dp), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -252,17 +311,17 @@ fun MemberCard(
                 ) {
                     Button(
                         onClick = onApprove,
-                        modifier = Modifier.weight(1f).height(40.dp),
+                        modifier = Modifier.weight(1f).height(44.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text("Approve", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
                     Button(
                         onClick = onReject,
-                        modifier = Modifier.weight(1f).height(40.dp),
+                        modifier = Modifier.weight(1f).height(44.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text("Reject", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
@@ -271,10 +330,10 @@ fun MemberCard(
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedButton(
                     onClick = onPromote,
-                    modifier = Modifier.fillMaxWidth().height(36.dp),
-                    shape = RoundedCornerShape(8.dp)
+                    modifier = Modifier.fillMaxWidth().height(40.dp),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Promote to Admin", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Promote to Admin", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -288,23 +347,24 @@ fun DetailedLogsModal(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Detailed Meal Logs", fontWeight = FontWeight.Bold) },
+        title = { Text("Today's Member Choices", fontWeight = FontWeight.ExtraBold) },
         text = {
             LazyColumn(
-                modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth().heightIn(max = 450.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(details) { detail ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(detail.userName, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                MealStatusItem("Lunch", detail.lunch)
-                                MealStatusItem("Dinner", detail.dinner)
+                                MealStatusItem("Lunch", detail.lunch, detail.lunchUpdatedAt)
+                                MealStatusItem("Dinner", detail.dinner, detail.dinnerUpdatedAt)
                             }
                         }
                     }
@@ -313,22 +373,27 @@ fun DetailedLogsModal(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text("Close", fontWeight = FontWeight.Bold)
             }
         }
     )
 }
 
 @Composable
-fun MealStatusItem(label: String, status: Boolean) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = if (status) Icons.Default.CheckCircle else Icons.Default.Cancel,
-            contentDescription = null,
-            tint = if (status) Color(0xFF10B981) else Color(0xFFEF4444),
-            modifier = Modifier.size(16.dp)
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        Text("$label: ${if (status) "YES" else "NO"}", fontSize = 13.sp)
+fun MealStatusItem(label: String, status: Boolean, time: String) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = if (status) Icons.Default.CheckCircle else Icons.Default.Cancel,
+                contentDescription = null,
+                tint = if (status) Color(0xFF10B981) else Color(0xFFEF4444),
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("$label: ${if (status) "YES" else "NO"}", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        }
+        if (time.isNotEmpty()) {
+            Text(time, fontSize = 10.sp, color = Color.Gray)
+        }
     }
 }

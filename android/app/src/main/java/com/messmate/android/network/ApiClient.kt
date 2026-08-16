@@ -12,9 +12,14 @@ object ApiClient {
 
     private var retrofit: Retrofit? = null
     lateinit var tokenManager: TokenManager
+    var isInitialized: Boolean = false
+        private set
 
     fun initialize(context: Context) {
-        tokenManager = TokenManager(context)
+        if (!isInitialized) {
+            tokenManager = TokenManager(context)
+            isInitialized = true
+        }
     }
 
     fun getRetrofit(): Retrofit {

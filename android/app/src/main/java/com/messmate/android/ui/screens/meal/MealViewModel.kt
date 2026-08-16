@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.messmate.android.service.FcmEventBus
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -38,6 +39,16 @@ class MealViewModel : ViewModel() {
 
     init {
         loadDashboard()
+
+        // Background refresh when FCM events arrive (Live update for user)
+        viewModelScope.launch {
+            FcmEventBus.events.collect { type ->
+                if (type.equals("MEAL_UPDATE", ignoreCase = true) || 
+                    type.equals("MEAL_VOTE", ignoreCase = true)) {
+                    loadDashboard()
+                }
+            }
+        }
     }
 
     fun loadDashboard() {

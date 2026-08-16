@@ -9,7 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.time.LocalDate
+import retrofit2.HttpException
+import org.json.JSONObject
 
 sealed class AdminBillState {
     object Idle : AdminBillState()
@@ -24,13 +25,22 @@ class AdminBillViewModel : ViewModel() {
 
     fun generateBill(monthYear: String) {
         val messId = MessRepository.currentMessId.value ?: return
+        
         viewModelScope.launch {
             _state.value = AdminBillState.Loading
             try {
                 val response = ApiClient.apiService.generateSettlement(messId, monthYear)
                 _state.value = AdminBillState.Success(response, "Bill generated successfully!")
+            } catch (e: HttpException) {
+                val errorMsg = try {
+                    val errorBody = e.response()?.errorBody()?.string()
+                    JSONObject(errorBody ?: "{}").optString("message", "Invalid request (400)")
+                } catch (ex: Exception) {
+                    "Error: ${e.message()}"
+                }
+                _state.value = AdminBillState.Error(errorMsg)
             } catch (e: Exception) {
-                _state.value = AdminBillState.Error("Failed to generate bill: ${e.localizedMessage}")
+                _state.value = AdminBillState.Error("Connection failed: ${e.localizedMessage}")
             }
         }
     }
@@ -42,8 +52,10 @@ class AdminBillViewModel : ViewModel() {
             try {
                 val response = ApiClient.apiService.closeSettlement(messId, id, monthYear)
                 _state.value = AdminBillState.Success(response, "Bill period closed.")
+            } catch (e: HttpException) {
+                _state.value = AdminBillState.Error("Failed to close: ${e.message()}")
             } catch (e: Exception) {
-                _state.value = AdminBillState.Error("Failed to close bill: ${e.localizedMessage}")
+                _state.value = AdminBillState.Error("Error: ${e.localizedMessage}")
             }
         }
     }

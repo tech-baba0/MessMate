@@ -10,8 +10,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import android.app.DatePickerDialog
+import java.util.Calendar
+import java.time.LocalDate
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,7 +46,7 @@ fun AddBazarExpenseScreen(
     var title by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var paidBy by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf(LocalDate.now().toString()) }
     var category by remember { mutableStateOf("Grocery") }
     var notes by remember { mutableStateOf("") }
     
@@ -188,12 +193,28 @@ fun AddBazarExpenseScreen(
                 }
                 
                 item {
+                    val context = LocalContext.current
                     OutlinedTextField(
                         value = date,
                         onValueChange = { date = it },
                         label = { Text("Date (YYYY-MM-DD)") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = {
+                                val cal = Calendar.getInstance()
+                                val year = cal.get(Calendar.YEAR)
+                                val month = cal.get(Calendar.MONTH)
+                                val day = cal.get(Calendar.DAY_OF_MONTH)
+                                DatePickerDialog(context, { _, y, m, d ->
+                                    val formattedMonth = (m + 1).toString().padStart(2, '0')
+                                    val formattedDay = d.toString().padStart(2, '0')
+                                    date = "$y-$formattedMonth-$formattedDay"
+                                }, year, month, day).show()
+                            }) {
+                                Icon(Icons.Default.DateRange, contentDescription = "Select Date")
+                            }
+                        },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = inputBgColor,
                             unfocusedContainerColor = inputBgColor,

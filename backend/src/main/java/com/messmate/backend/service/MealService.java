@@ -302,18 +302,23 @@ public class MealService {
 
             MealEntry e = existingOptMap.get(member.getUserId());
 
-            // Only aggregate and display users who explicitly interacted with the voting
-            // system today.
-            if (e == null)
-                continue;
+            boolean lunch;
+            boolean dinner;
 
-            boolean lunch = e.getLunch();
-            boolean dinner = e.getDinner();
+            // Include users who haven't explicitly voted, using the mess's default flags
+            if (e == null) {
+                lunch = mess.getDefaultLunchAvailability() != null ? mess.getDefaultLunchAvailability() : true;
+                dinner = mess.getDefaultDinnerAvailability() != null ? mess.getDefaultDinnerAvailability() : true;
+            } else {
+                lunch = e.getLunch();
+                dinner = e.getDinner();
+            }
 
             if (lunch)
                 todayLunchYes++;
             else
                 todayLunchNo++;
+
             if (dinner)
                 todayDinnerYes++;
             else
@@ -322,16 +327,18 @@ public class MealService {
             String lunchTime = "Unknown";
             String dinnerTime = "Unknown";
 
-            if (e.getLunchUpdatedAt() != null) {
-                lunchTime = e.getLunchUpdatedAt().format(timeFormatter);
-            } else if (e.getUpdatedTimestamp() != null) {
-                lunchTime = e.getUpdatedTimestamp().format(timeFormatter);
-            }
+            if (e != null) {
+                if (e.getLunchUpdatedAt() != null) {
+                    lunchTime = e.getLunchUpdatedAt().format(timeFormatter);
+                } else if (e.getUpdatedTimestamp() != null) {
+                    lunchTime = e.getUpdatedTimestamp().format(timeFormatter);
+                }
 
-            if (e.getDinnerUpdatedAt() != null) {
-                dinnerTime = e.getDinnerUpdatedAt().format(timeFormatter);
-            } else if (e.getUpdatedTimestamp() != null) {
-                dinnerTime = e.getUpdatedTimestamp().format(timeFormatter);
+                if (e.getDinnerUpdatedAt() != null) {
+                    dinnerTime = e.getDinnerUpdatedAt().format(timeFormatter);
+                } else if (e.getUpdatedTimestamp() != null) {
+                    dinnerTime = e.getUpdatedTimestamp().format(timeFormatter);
+                }
             }
 
             User user = userRepository.findById(member.getUserId()).orElse(null);

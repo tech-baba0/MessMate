@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.messmate.android.service.FcmEventBus
 
 sealed class BazarState {
     object Idle : BazarState()
@@ -35,6 +36,17 @@ class BazarViewModel : ViewModel() {
     init {
         loadMembers()
         fetchExpenses()
+
+        // Listen for new expenses or member updates
+        viewModelScope.launch {
+            FcmEventBus.events.collect { type ->
+                if (type.equals("EXPENSE_UPDATE", ignoreCase = true)) {
+                    fetchExpenses()
+                } else if (type.equals("ROLE_UPDATE", ignoreCase = true)) {
+                    loadMembers()
+                }
+            }
+        }
     }
 
     fun fetchExpenses() {
@@ -54,7 +66,7 @@ class BazarViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val list = ApiClient.apiService.getMessMembers(messId)
-                _members.value = list.filter { it.status != "PENDING" }
+                _members.value = list.filter { it.status != "PENDING" && it.role == "ROLE_USER" }
             } catch (e: Exception) {
                 // Ignore
             }

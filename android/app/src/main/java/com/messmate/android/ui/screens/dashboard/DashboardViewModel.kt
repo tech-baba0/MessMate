@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.messmate.android.service.FcmEventBus
 
 sealed class DashboardState {
     object Loading : DashboardState()
@@ -30,6 +31,18 @@ class DashboardViewModel : ViewModel() {
 
     init {
         fetchDashboardData()
+
+        // Listen for live FCM updates impacting the user dashboard
+        viewModelScope.launch {
+            FcmEventBus.events.collect { type ->
+                if (type.equals("MENU_UPDATE", true) || 
+                    type.equals("EXPENSE_UPDATE", true) ||
+                    type.equals("ROLE_UPDATE", true) ||
+                    type.equals("PAYMENT_VERIFIED", true)) {
+                    fetchDashboardData()
+                }
+            }
+        }
     }
 
     fun fetchDashboardData() {
