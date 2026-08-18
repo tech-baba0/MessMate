@@ -8,44 +8,76 @@ import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
+/**
+ * FcmService — initialises Firebase Admin SDK and sends push notifications.
+ *
+ * Credential loading order:
+ * 1. Environment variable FIREBASE_SERVICE_ACCOUNT_JSON (contents of the JSON)
+ * 2. Classpath resource firebase-adminsdk.json
+ * If neither is present, FCM is disabled (notifications silently skipped).
+ */
 @Service
 public class FcmService {
+
+    private boolean fcmReady = false;
 
     @PostConstruct
     public void initialize() {
         try {
-            InputStream serviceAccount = getClass().getClassLoader().getResourceAsStream("firebase-adminsdk.json");
-            if (serviceAccount == null) {
-                System.out.println(
-                        "No firebase-adminsdk.json found, FCM not initialized. Notifications will be skipped.");
+            InputStream credentialsStream = resolveCredentials();
+            if (credentialsStream == null) {
+                System.out.println("[FCM] No Firebase credentials found — notifications disabled.");
                 return;
             }
 
             FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                    .setCredentials(GoogleCredentials.fromStream(credentialsStream))
                     .build();
 
             if (FirebaseApp.getApps().isEmpty()) {
                 FirebaseApp.initializeApp(options);
-                System.out.println("Firebase Application initialized successfully.");
             }
+
+            fcmReady = true;
+            System.out.println("[FCM] Firebase Admin SDK initialised successfully.");
+
         } catch (Exception e) {
-            System.err.println("Failed to initialize Firebase Messaging: " + e.getMessage());
+            System.err.println("[FCM] Initialisation failed: " + e.getMessage());
         }
     }
 
-    public void sendPushNotification(String token, String title, String body) {
-        if (token == null || token.isEmpty()) {
-            return;
+    /**
+     * Try env var first, then classpath file.
+     */
+    private InputStream resolveCredentials() {
+        // 1. Environment variable (preferred for cloud deployments like Render)
+        String envJson = System.getenv("FIREBASE_SERVICE_ACCOUNT_JSON");
+        if (envJson != null && !envJson.isBlank()) {
+            System.out.println("[FCM] Loading credentials from FIREBASE_SERVICE_ACCOUNT_JSON env var.");
+            return new ByteArrayInputStream(envJson.getBytes(StandardCharsets.UTF_8));
         }
 
-        try {
-            if (FirebaseApp.getApps().isEmpty()) {
-                return; // Not initialized
-            }
+        // 2. Classpath resource (local dev)
+        InputStream resource = getClass().getClassLoader().getResourceAsStream("firebase-adminsdk.json");
+        if (resource != null) {
+            System.out.println("[FCM] Loading credentials from classpath firebase-adminsdk.json.");
+            return resource;
+        }
 
+        return null;
+    }
+
+    // ─── Public send methods ──────────────────────────────────────────────────
+
+    public void sendPushNotification(String token, String title, String body) {
+        if (!fcmReady || token == null || token.isBlank())
+            return;
+
+        try {
             Message message = Message.builder()
                     .setToken(token)
                     .setNotification(Notification.builder()
@@ -55,36 +87,34 @@ public class FcmService {
                     .build();
 
             String response = FirebaseMessaging.getInstance().send(message);
-            System.out.println("Successfully sent message to " + token + ": " + response);
+            System.out.println("[FCM] Sent to " + token.substring(0, Math.min(20, token.length())) + "… → " + response);
         } catch (Exception e) {
-            System.err.println("Firebase message delivery failed: " + e.getMessage());
+            System.err.println("[FCM] Send failed: " + e.getMessage());
         }
     }
 
     public void sendPushNotificationWithData(String token, String title, String body,
             java.util.Map<String, String> data) {
-        if (token == null || token.isEmpty()) {
+        if (!fcmReady || token == null || token.isBlank())
             return;
-        }
 
         try {
-            if (FirebaseApp.getApps().isEmpty()) {
-                return; // Not initialized
-            }
-
-            Message message = Message.builder()
+            Message.Builder builder = Message.builder()
                     .setToken(token)
                     .setNotification(Notification.builder()
                             .setTitle(title)
                             .setBody(body)
-                            .build())
-                    .putAllData(data)
-                    .build();
+                            .build());
 
-            String response = FirebaseMessaging.getInstance().send(message);
-            System.out.println("Successfully sent data message to " + token + ": " + response);
+            if (data != null && !data.isEmpty()) {
+                builder.putAllData(data);
+            }
+
+            String response = FirebaseMessaging.getInstance().send(builder.build());
+            System.out.println(
+                    "[FCM] Sent data msg to " + token.substring(0, Math.min(20, token.length())) + "… → " + response);
         } catch (Exception e) {
-            System.err.println("Firebase data message delivery failed: " + e.getMessage());
+            System.err.println("[FCM] Send data msg failed: " + e.getMessage());
         }
     }
 }
