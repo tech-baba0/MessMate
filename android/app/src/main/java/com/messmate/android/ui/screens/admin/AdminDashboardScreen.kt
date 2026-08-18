@@ -91,8 +91,8 @@ fun AdminDashboardScreen(
                         // 1. Total Meal Count (Live)
                         item {
                             val stats = s.mealDashboard
-                            val totalToday = stats.todayLunchYes + stats.todayDinnerYes
-                            
+                            val totalActiveCount = stats.totalActiveMembers
+
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(24.dp),
@@ -103,13 +103,74 @@ fun AdminDashboardScreen(
                                     modifier = Modifier.padding(24.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
-                                    Text("TOTAL MEALS TODAY", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                    Text(
-                                        text = "$totalToday",
-                                        color = Color.White,
-                                        fontSize = 56.sp,
-                                        fontWeight = FontWeight.Black
-                                    )
+                                    Text("TODAY'S MEAL COUNT", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    Spacer(Modifier.height(12.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceEvenly
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text("🍚", fontSize = 22.sp)
+                                            Text(
+                                                text = "${stats.todayLunchYes}",
+                                                color = Color(0xFF10B981),
+                                                fontSize = 42.sp,
+                                                fontWeight = FontWeight.Black
+                                            )
+                                            Text("Lunch", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                                            if (stats.todayLunchNo > 0) {
+                                                Text(
+                                                    "${stats.todayLunchNo} opted out",
+                                                    color = Color(0xFFEF4444),
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                            }
+                                        }
+                                        Box(
+                                            modifier = Modifier
+                                                .width(1.dp)
+                                                .height(80.dp)
+                                                .background(Color.White.copy(alpha = 0.15f))
+                                        )
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text("🌙", fontSize = 22.sp)
+                                            Text(
+                                                text = "${stats.todayDinnerYes}",
+                                                color = Color(0xFFF59E0B),
+                                                fontSize = 42.sp,
+                                                fontWeight = FontWeight.Black
+                                            )
+                                            Text("Dinner", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                                            if (stats.todayDinnerNo > 0) {
+                                                Text(
+                                                    "${stats.todayDinnerNo} opted out",
+                                                    color = Color(0xFFEF4444),
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Spacer(Modifier.height(12.dp))
+                                    // Default-YES context
+                                    Row(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color.White.copy(alpha = 0.06f))
+                                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Text("ℹ️", fontSize = 14.sp)
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            "Default YES for all $totalActiveCount active members",
+                                            color = Color.White.copy(alpha = 0.6f),
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                    Spacer(Modifier.height(8.dp))
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.Center,
@@ -123,12 +184,12 @@ fun AdminDashboardScreen(
                             }
                         }
 
-                        // 2. Meal Stats Section
+                        // 2. Voting Status Cards
                         item {
                             val stats = s.mealDashboard
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                StatBox(title = "Lunch", yesCount = stats.todayLunchYes, status = stats.lunchVotingStatus, modifier = Modifier.weight(1f))
-                                StatBox(title = "Dinner", yesCount = stats.todayDinnerYes, status = stats.dinnerVotingStatus, modifier = Modifier.weight(1f))
+                                StatBox(title = "Lunch", yesCount = stats.todayLunchYes, noCount = stats.todayLunchNo, status = stats.lunchVotingStatus, modifier = Modifier.weight(1f))
+                                StatBox(title = "Dinner", yesCount = stats.todayDinnerYes, noCount = stats.todayDinnerNo, status = stats.dinnerVotingStatus, modifier = Modifier.weight(1f))
                             }
                             Spacer(modifier = Modifier.height(12.dp))
                             Button(
@@ -140,6 +201,7 @@ fun AdminDashboardScreen(
                                 Text("View Member Detailed Logs", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                             }
                         }
+
 
                         // 3. Quick Actions
                         item {
@@ -226,7 +288,7 @@ fun LiveIndicator() {
 }
 
 @Composable
-fun StatBox(title: String, yesCount: Int, status: String, modifier: Modifier = Modifier) {
+fun StatBox(title: String, yesCount: Int, noCount: Int = 0, status: String, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
@@ -238,6 +300,9 @@ fun StatBox(title: String, yesCount: Int, status: String, modifier: Modifier = M
         Spacer(modifier = Modifier.height(4.dp))
         Text("$yesCount", fontSize = 28.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
         Text("YES", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
+        if (noCount > 0) {
+            Text("$noCount NO", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFEF4444))
+        }
         Spacer(modifier = Modifier.height(4.dp))
         val statusColor = if (status == "OPEN") Color(0xFF10B981) else Color(0xFFEF4444)
         Text(status, fontSize = 10.sp, fontWeight = FontWeight.Black, color = statusColor)
@@ -363,8 +428,18 @@ fun DetailedLogsModal(
                             Text(detail.userName, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                             Spacer(modifier = Modifier.height(6.dp))
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                MealStatusItem("Lunch", detail.lunch, detail.lunchUpdatedAt)
-                                MealStatusItem("Dinner", detail.dinner, detail.dinnerUpdatedAt)
+                                MealStatusItem(
+                                    label = "Lunch",
+                                    status = detail.lunch,
+                                    time = detail.lunchUpdatedAt,
+                                    isDefault = detail.lunchIsDefault
+                                )
+                                MealStatusItem(
+                                    label = "Dinner",
+                                    status = detail.dinner,
+                                    time = detail.dinnerUpdatedAt,
+                                    isDefault = detail.dinnerIsDefault
+                                )
                             }
                         }
                     }
@@ -380,7 +455,7 @@ fun DetailedLogsModal(
 }
 
 @Composable
-fun MealStatusItem(label: String, status: Boolean, time: String) {
+fun MealStatusItem(label: String, status: Boolean, time: String, isDefault: Boolean = true) {
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
@@ -392,8 +467,11 @@ fun MealStatusItem(label: String, status: Boolean, time: String) {
             Spacer(modifier = Modifier.width(4.dp))
             Text("$label: ${if (status) "YES" else "NO"}", fontSize = 13.sp, fontWeight = FontWeight.Medium)
         }
-        if (time.isNotEmpty()) {
-            Text(time, fontSize = 10.sp, color = Color.Gray)
-        }
+        Text(
+            if (isDefault) "Default" else time,
+            fontSize = 10.sp,
+            color = if (isDefault) Color.Gray else Color(0xFF10B981)
+        )
     }
 }
+
