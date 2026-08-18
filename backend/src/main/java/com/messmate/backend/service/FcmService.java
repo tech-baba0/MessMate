@@ -25,6 +25,10 @@ public class FcmService {
 
     private boolean fcmReady = false;
 
+    public boolean isReady() {
+        return fcmReady;
+    }
+
     @PostConstruct
     public void initialize() {
         try {

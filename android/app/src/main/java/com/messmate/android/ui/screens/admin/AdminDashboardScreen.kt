@@ -216,6 +216,10 @@ fun AdminDashboardScreen(
                             }
                         }
 
+                        // 3b. Notification health
+                        item {
+                            NotificationHealthCard(viewModel = viewModel)
+                        }
 
                         // 4. Pending Approvals
                         if (pendingMembers.isNotEmpty()) {
@@ -477,3 +481,66 @@ fun MealStatusItem(label: String, status: Boolean, time: String, isDefault: Bool
     }
 }
 
+@Composable
+fun NotificationHealthCard(viewModel: AdminViewModel) {
+    val fcmStatus by viewModel.fcmStatus.collectAsState()
+    val testResult by viewModel.testNotificationResult.collectAsState()
+    val isTestingFcm by viewModel.isTestingFcm.collectAsState()
+    LaunchedEffect(Unit) { viewModel.checkFcmStatus() }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = when (fcmStatus) {
+                "ready" -> Color(0xFF10B981).copy(alpha = 0.08f)
+                "disabled" -> Color(0xFFEF4444).copy(alpha = 0.08f)
+                else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+            }
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(when (fcmStatus) { "ready" -> "🔔"; "disabled" -> "🔕"; else -> "⏳" }, fontSize = 20.sp)
+                Spacer(Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Push Notifications", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(
+                        when (fcmStatus) {
+                            "ready" -> "Firebase ready — notifications active ✅"
+                            "disabled" -> "Firebase NOT set up on server ❌"
+                            else -> "Checking…"
+                        },
+                        fontSize = 11.sp,
+                        color = when (fcmStatus) { "ready" -> Color(0xFF10B981); "disabled" -> Color(0xFFEF4444); else -> Color.Gray }
+                    )
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = { viewModel.sendTestNotification() },
+                enabled = !isTestingFcm,
+                modifier = Modifier.fillMaxWidth().height(42.dp),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B82F6))
+            ) {
+                if (isTestingFcm) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                } else {
+                    Text("Send Test Notification to My Device", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            }
+            if (testResult.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                Text(testResult, fontSize = 12.sp,
+                    color = if (testResult.contains("sent", ignoreCase = true)) Color(0xFF10B981) else Color(0xFFEF4444))
+            }
+            if (fcmStatus == "disabled") {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Fix: Firebase Console → Project Settings → Service Accounts → Generate private key → paste JSON into Render env var FIREBASE_SERVICE_ACCOUNT_JSON",
+                    fontSize = 10.sp, color = Color(0xFFEF4444).copy(alpha = 0.8f)
+                )
+            }
+        }
+    }
+}

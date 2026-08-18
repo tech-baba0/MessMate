@@ -132,4 +132,45 @@ class AdminViewModel : ViewModel() {
             } catch (e: Exception) {}
         }
     }
+
+    // ─── FCM Notification health ──────────────────────────────────────────────
+
+    private val _fcmStatus = MutableStateFlow("unknown") // "unknown" | "ready" | "disabled"
+    val fcmStatus: StateFlow<String> = _fcmStatus.asStateFlow()
+
+    private val _testNotificationResult = MutableStateFlow("")
+    val testNotificationResult: StateFlow<String> = _testNotificationResult.asStateFlow()
+
+    private val _isTestingFcm = MutableStateFlow(false)
+    val isTestingFcm: StateFlow<Boolean> = _isTestingFcm.asStateFlow()
+
+    fun checkFcmStatus() {
+        viewModelScope.launch {
+            try {
+                val result = ApiClient.apiService.getFcmStatus()
+                val ready = result["fcmReady"] as? Boolean ?: false
+                _fcmStatus.value = if (ready) "ready" else "disabled"
+            } catch (e: Exception) {
+                _fcmStatus.value = "unknown"
+            }
+        }
+    }
+
+    fun sendTestNotification() {
+        viewModelScope.launch {
+            _isTestingFcm.value = true
+            _testNotificationResult.value = ""
+            try {
+                val result = ApiClient.apiService.sendTestNotification()
+                val msg = result["message"] as? String ?: "Done"
+                _testNotificationResult.value = msg
+                // Re-check status after test
+                checkFcmStatus()
+            } catch (e: Exception) {
+                _testNotificationResult.value = "❌ Error: ${e.localizedMessage}"
+            } finally {
+                _isTestingFcm.value = false
+            }
+        }
+    }
 }

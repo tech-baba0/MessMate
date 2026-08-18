@@ -162,4 +162,12 @@ interface ApiService {
         @Path("id") id: String,
         @Query("monthYear") monthYear: String
     ): MonthlySettlementResponse
+
+    // ─── Notifications ────────────────────────────────────────────────────────
+
+    @GET("notifications/status")
+    suspend fun getFcmStatus(): Map<String, Any>
+
+    @POST("notifications/test")
+    suspend fun sendTestNotification(): Map<String, Any>
 }
