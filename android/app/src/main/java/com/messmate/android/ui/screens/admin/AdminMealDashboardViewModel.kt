@@ -43,11 +43,12 @@ class AdminMealDashboardViewModel : ViewModel() {
             }
         }
 
-        // Periodic polling for "live" feel (every 10 seconds for today)
+        // Periodic polling: only poll live when viewing today's data (in IST)
         viewModelScope.launch {
             while (isActive) {
-                delay(10000) // Poll every 10 seconds for live today view
-                if (_selectedDate.value == LocalDate.now()) {
+                delay(10000)
+                val todayIndia = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Kolkata"))
+                if (_selectedDate.value == todayIndia) {
                     loadDashboard(isSilent = true)
                 }
             }

@@ -15,4 +15,8 @@ public class MemberMealDetailResponse {
     private boolean dinner;
     private String lunchUpdatedAt;
     private String dinnerUpdatedAt;
+
+    // true = member never explicitly voted; their value is the mess default
+    private boolean lunchIsDefault;
+    private boolean dinnerIsDefault;
 }

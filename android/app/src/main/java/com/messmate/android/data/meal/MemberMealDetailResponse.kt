@@ -5,5 +5,7 @@ data class MemberMealDetailResponse(
     val lunch: Boolean,
     val dinner: Boolean,
     val lunchUpdatedAt: String,
-    val dinnerUpdatedAt: String
+    val dinnerUpdatedAt: String,
+    val lunchIsDefault: Boolean = true,
+    val dinnerIsDefault: Boolean = true
 )

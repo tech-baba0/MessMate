@@ -1,6 +1,8 @@
 package com.messmate.android.data.meal
 
 data class AdminMealDashboardResponse(
+    val targetDate: String? = null,
+    val totalActiveMembers: Int = 0,
     val todayLunchYes: Int,
     val todayLunchNo: Int,
     val todayDinnerYes: Int,
@@ -12,3 +14,4 @@ data class AdminMealDashboardResponse(
     val dinnerVotingStatus: String,
     val memberDetails: List<MemberMealDetailResponse>? = null
 )
+

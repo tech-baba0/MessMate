@@ -25,6 +25,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
+
         Log.d("FCM", "New Token: $token")
 
         scope.launch {
@@ -37,67 +38,99 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                     ApiClient.apiService.updateFcmToken(
                         com.messmate.android.data.auth.FcmTokenRequest(token)
                     )
+
                     Log.d("FCM", "Token updated successfully on backend")
+                } else {
+                    Log.e("FCM", "User is not logged in, token not uploaded")
                 }
+
             } catch (e: Exception) {
-                Log.e("FCM", "Failed to update token: ${e.message}")
+                Log.e("FCM", "Failed to update token: ${e.message}", e)
             }
         }
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        Log.d("FCM", "Message received from: ${message.from} with data: ${message.data}")
 
-        // Instant Live Update Trigger
+        Log.d(
+            "FCM",
+            "Message received from: ${message.from} with data: ${message.data}"
+        )
+
+        // Live update trigger
         val type = message.data["type"]
+
         if (type != null) {
             Log.d("FCM", "Emitting Live Update Event: $type")
             FcmEventBus.emitEvent(type)
         }
 
-        // Handle Visual Notification
+        // Show notification
         message.notification?.let {
-            showForegroundNotification(it.title ?: "MessMate", it.body ?: "")
+            showForegroundNotification(
+                it.title ?: "MessMate",
+                it.body ?: ""
+            )
         } ?: run {
             val title = message.data["title"]
             val body = message.data["body"]
+
             if (title != null && body != null) {
                 showForegroundNotification(title, body)
             }
         }
     }
 
-    private fun showForegroundNotification(title: String, body: String) {
+    private fun showForegroundNotification(
+        title: String,
+        body: String
+    ) {
         val channelId = "messmate_alerts"
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        val notificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
             val channel = NotificationChannel(
-                channelId, "MessMate Alerts", NotificationManager.IMPORTANCE_HIGH
+                channelId,
+                "MessMate Alerts",
+                NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Real-time updates for meals and expenses"
             }
+
             notificationManager.createNotificationChannel(channel)
         }
 
         val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            flags =
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
+
         val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent, PendingIntent.FLAG_IMMUTABLE
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
-            .build()
+        val notification =
+            NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
 
-        notificationManager.notify(Random.nextInt(), notification)
+        notificationManager.notify(
+            Random.nextInt(),
+            notification
+        )
     }
 
     override fun onDestroy() {

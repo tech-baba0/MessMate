@@ -143,6 +143,18 @@ public class MealService {
         User actionUser = userRepository.findById(userId).orElse(null);
         String actionUserName = actionUser != null ? actionUser.getName() : "A user";
 
+        // Build a human-readable change summary for the notification
+        StringBuilder changesSb = new StringBuilder();
+        if (request.getLunch() != null) {
+            changesSb.append("Lunch ").append(request.getLunch() ? "\u2705 YES" : "\u274C NO");
+        }
+        if (request.getDinner() != null) {
+            if (changesSb.length() > 0)
+                changesSb.append(" | ");
+            changesSb.append("Dinner ").append(request.getDinner() ? "\u2705 YES" : "\u274C NO");
+        }
+        String changesText = changesSb.length() > 0 ? changesSb.toString() : "No changes";
+
         // Notify admins
         List<MessMember> members = messMemberRepository.findByMessId(messId);
         List<MessMember> admins = members.stream()
@@ -151,15 +163,18 @@ public class MealService {
                 .collect(Collectors.toList());
 
         for (MessMember adminMember : admins) {
+            // Don't notify the admin if they are the one making the change
+            if (adminMember.getUserId().equals(userId))
+                continue;
+
             User adminUser = userRepository.findById(adminMember.getUserId()).orElse(null);
             if (adminUser != null && adminUser.getFcmToken() != null && !adminUser.getFcmToken().isEmpty()) {
-                String title = "Meal Update: " + actionUserName;
-                String body = actionUserName + " saved their meal for " + request.getDate() +
-                        ". Lunch: " + (savedEntry.getLunch() ? "YES" : "NO") +
-                        ", Dinner: " + (savedEntry.getDinner() ? "YES" : "NO");
+                String title = "\uD83C\uDF7D Meal Update: " + actionUserName;
+                String body = actionUserName + " updated meal for " + request.getDate() + ": " + changesText;
 
                 java.util.Map<String, String> data = new java.util.HashMap<>();
                 data.put("type", "MEAL_UPDATE");
+                data.put("date", request.getDate().toString());
 
                 fcmService.sendPushNotificationWithData(adminUser.getFcmToken(), title, body, data);
             }
@@ -304,14 +319,23 @@ public class MealService {
 
             boolean lunch;
             boolean dinner;
+            // lunchIsDefault = true means user never explicitly voted (counted as default
+            // YES)
+            boolean lunchIsDefault;
+            boolean dinnerIsDefault;
 
-            // Include users who haven't explicitly voted, using the mess's default flags
             if (e == null) {
+                // No DB record — using mess-wide default
                 lunch = mess.getDefaultLunchAvailability() != null ? mess.getDefaultLunchAvailability() : true;
                 dinner = mess.getDefaultDinnerAvailability() != null ? mess.getDefaultDinnerAvailability() : true;
+                lunchIsDefault = true;
+                dinnerIsDefault = true;
             } else {
                 lunch = e.getLunch();
                 dinner = e.getDinner();
+                // If updatedAt is null for a meal type, it was never explicitly touched
+                lunchIsDefault = (e.getLunchUpdatedAt() == null);
+                dinnerIsDefault = (e.getDinnerUpdatedAt() == null);
             }
 
             if (lunch)
@@ -324,19 +348,19 @@ public class MealService {
             else
                 todayDinnerNo++;
 
-            String lunchTime = "Unknown";
-            String dinnerTime = "Unknown";
+            String lunchTime = lunchIsDefault ? "Default" : "Unknown";
+            String dinnerTime = dinnerIsDefault ? "Default" : "Unknown";
 
             if (e != null) {
                 if (e.getLunchUpdatedAt() != null) {
                     lunchTime = e.getLunchUpdatedAt().format(timeFormatter);
-                } else if (e.getUpdatedTimestamp() != null) {
+                } else if (!lunchIsDefault && e.getUpdatedTimestamp() != null) {
                     lunchTime = e.getUpdatedTimestamp().format(timeFormatter);
                 }
 
                 if (e.getDinnerUpdatedAt() != null) {
                     dinnerTime = e.getDinnerUpdatedAt().format(timeFormatter);
-                } else if (e.getUpdatedTimestamp() != null) {
+                } else if (!dinnerIsDefault && e.getUpdatedTimestamp() != null) {
                     dinnerTime = e.getUpdatedTimestamp().format(timeFormatter);
                 }
             }
@@ -350,10 +374,14 @@ public class MealService {
                     .dinner(dinner)
                     .lunchUpdatedAt(lunchTime)
                     .dinnerUpdatedAt(dinnerTime)
+                    .lunchIsDefault(lunchIsDefault)
+                    .dinnerIsDefault(dinnerIsDefault)
                     .build());
         }
 
         return AdminMealDashboardResponse.builder()
+                .targetDate(targetDate)
+                .totalActiveMembers(activeMembers.size())
                 .todayLunchYes(todayLunchYes)
                 .todayLunchNo(todayLunchNo)
                 .todayDinnerYes(todayDinnerYes)
