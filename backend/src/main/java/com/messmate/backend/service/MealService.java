@@ -159,7 +159,7 @@ public class MealService {
         List<MessMember> members = messMemberRepository.findByMessId(messId);
         List<MessMember> admins = members.stream()
                 .filter(m -> m.getRole() == com.messmate.backend.entity.Role.ROLE_ADMIN
-                        && "APPROVED".equals(m.getStatus()))
+                        && ("ACTIVE".equals(m.getStatus()) || "APPROVED".equals(m.getStatus())))
                 .collect(Collectors.toList());
 
         for (MessMember adminMember : admins) {
@@ -278,7 +278,7 @@ public class MealService {
         Mess mess = messRepository.findById(messId).orElseThrow();
         List<MessMember> allMembers = messMemberRepository.findByMessId(messId);
         List<MessMember> activeMembers = allMembers.stream()
-                .filter(m -> "APPROVED".equals(m.getStatus()))
+                .filter(m -> "ACTIVE".equals(m.getStatus()) || "APPROVED".equals(m.getStatus()))
                 .collect(Collectors.toList());
 
         java.time.ZoneId indiaZone = java.time.ZoneId.of("Asia/Kolkata");

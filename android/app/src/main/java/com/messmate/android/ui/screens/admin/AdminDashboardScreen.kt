@@ -80,7 +80,9 @@ fun AdminDashboardScreen(
                 }
                 is AdminState.Success -> {
                     val pendingMembers = s.members.filter { it.status == "PENDING" }
-                    val activeMembers = s.members.filter { it.status != "PENDING" }
+                    val activeMembers = s.members.filter {
+                        it.status == "ACTIVE" || it.status == "APPROVED"
+                    }
                     var showDetailsDialog by remember { mutableStateOf(false) }
 
                     LazyColumn(

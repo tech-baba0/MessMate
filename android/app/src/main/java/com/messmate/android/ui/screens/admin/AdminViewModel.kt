@@ -47,10 +47,10 @@ class AdminViewModel : ViewModel() {
             }
         }
 
-        // Fallback polling for real-time feel (every 10 seconds)
+        // Fallback polling for real-time feel (every 5 seconds)
         viewModelScope.launch {
             while (isActive) {
-                delay(10000)
+                delay(5000)
                 loadDashboard(isSilent = true)
             }
         }

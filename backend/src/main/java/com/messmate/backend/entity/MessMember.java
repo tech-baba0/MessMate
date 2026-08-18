@@ -18,13 +18,13 @@ import java.time.LocalDateTime;
 public class MessMember {
     @Id
     private String id;
-    
+
     private String messId;
     private String userId;
-    
+
     private Role role; // ROLE_ADMIN, ROLE_USER
-    
-    private String status; // PENDING, APPROVED, REJECTED
-    
+
+    private String status; // PENDING, ACTIVE, REJECTED
+
     private LocalDateTime joinDate;
 }

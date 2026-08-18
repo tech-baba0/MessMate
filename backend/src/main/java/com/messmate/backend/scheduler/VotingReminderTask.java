@@ -36,7 +36,7 @@ public class VotingReminderTask {
         for (Mess mess : allMesses) {
             List<MessMember> members = messMemberRepository.findByMessId(mess.getId());
             for (MessMember member : members) {
-                if ("APPROVED".equals(member.getStatus())) {
+                if ("ACTIVE".equals(member.getStatus()) || "APPROVED".equals(member.getStatus())) {
                     userRepository.findById(member.getUserId()).ifPresent(user -> {
                         if (user.getFcmToken() != null && !user.getFcmToken().isEmpty()) {
                             fcmService.sendPushNotification(

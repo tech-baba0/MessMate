@@ -96,9 +96,9 @@ class MealViewModel : ViewModel() {
                     messId,
                     MealToggleRequest(date = currentState.selectedDateStr, lunch = lunch, dinner = dinner)
                 )
-                // Reload dashboard to get updated data seamlessly
+                // Reload dashboard to get fresh server data
                 val data = ApiClient.apiService.getMealSelectionDashboard(messId)
-                
+
                 _state.value = currentState.copy(
                     dashboardData = data,
                     lunchActive = lunch,
@@ -106,15 +106,18 @@ class MealViewModel : ViewModel() {
                     isSaving = false,
                     saveSuccess = true
                 )
-                
-                // Clear success message after 3 seconds
-                kotlinx.coroutines.delay(3000)
+
+                // 🔑 Emit local live-update event so AdminViewModel refreshes
+                // immediately on the same device — no FCM required
+                FcmEventBus.emitEvent("MEAL_UPDATE")
+
+                // Clear success banner after 2 seconds
+                kotlinx.coroutines.delay(2000)
                 if (_state.value is MealState.Success) {
                     _state.value = (_state.value as MealState.Success).copy(saveSuccess = false)
                 }
             } catch (e: Exception) {
                 _state.value = currentState.copy(isSaving = false)
-                // Reload on error to reset UI to server state
                 loadDashboard()
             }
         }

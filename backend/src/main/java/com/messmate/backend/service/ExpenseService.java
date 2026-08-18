@@ -152,7 +152,7 @@ public class ExpenseService {
     public List<ExpenseShare> previewSplit(String messId, ExpenseRequest request) {
         List<MessMember> members = messMemberRepository.findByMessId(messId)
                 .stream()
-                .filter(m -> m.getStatus().equals("APPROVED"))
+                .filter(m -> "ACTIVE".equals(m.getStatus()) || "APPROVED".equals(m.getStatus()))
                 .collect(Collectors.toList());
 
         if (members.isEmpty())
