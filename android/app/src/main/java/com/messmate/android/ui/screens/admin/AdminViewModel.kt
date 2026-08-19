@@ -181,36 +181,33 @@ class AdminViewModel : ViewModel() {
             _isTestingFcm.value = true
             _testNotificationResult.value = "Registering device token…"
 
-            // Step 1: refresh token so backend has the latest one
-            try {
-                com.google.firebase.messaging.FirebaseMessaging.getInstance().token
-                    .addOnCompleteListener { task ->
-                        if (task.isSuccessful && task.result != null) {
-                            viewModelScope.launch {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().token
+                .addOnCompleteListener { task ->
+                    viewModelScope.launch {
+                        try {
+                            // Step 1: Upload token if successful
+                            if (task.isSuccessful && task.result != null) {
                                 try {
                                     ApiClient.apiService.updateFcmToken(
                                         com.messmate.android.data.auth.FcmTokenRequest(task.result!!)
                                     )
-                                } catch (e: Exception) { /* silent */ }
+                                } catch (e: Exception) {
+                                    // Error uploading token, but continue to try test
+                                }
                             }
+
+                            // Step 2: Send test notification AFTER token is guaranteed uploaded
+                            val result = ApiClient.apiService.sendTestNotification()
+                            val msg = result["message"] as? String ?: "Done"
+                            _testNotificationResult.value = msg
+                            checkFcmStatus()
+                        } catch (e: Exception) {
+                            _testNotificationResult.value = "❌ Error: ${e.localizedMessage}"
+                        } finally {
+                            _isTestingFcm.value = false
                         }
                     }
-            } catch (e: Exception) { /* silent */ }
-
-            // Step 2: short wait for token to propagate
-            kotlinx.coroutines.delay(1500)
-
-            // Step 3: send the test notification
-            try {
-                val result = ApiClient.apiService.sendTestNotification()
-                val msg = result["message"] as? String ?: "Done"
-                _testNotificationResult.value = msg
-                checkFcmStatus()
-            } catch (e: Exception) {
-                _testNotificationResult.value = "❌ Error: ${e.localizedMessage}"
-            } finally {
-                _isTestingFcm.value = false
-            }
+                }
         }
     }
 }
