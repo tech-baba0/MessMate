@@ -7,11 +7,7 @@ class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         
-        // Skip auth headers for public URLs like login/register
-        if (request.url.encodedPath.contains("/auth/")) {
-            return chain.proceed(request)
-        }
-
+        // Add auth header to all requests if token is available
         val requestBuilder = request.newBuilder()
         tokenManager.getToken()?.let { token ->
             requestBuilder.addHeader("Authorization", "Bearer $token")
