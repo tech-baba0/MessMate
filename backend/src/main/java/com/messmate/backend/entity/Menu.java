@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Data
 @Builder
@@ -28,5 +29,6 @@ public class Menu {
     private List<String> lunchItems;
     private List<String> dinnerItems;
 
+    @JsonProperty("isPublished")
     private Boolean isPublished;
 }
