@@ -33,19 +33,47 @@ class BazarViewModel : ViewModel() {
     private val _history = MutableStateFlow<List<ExpenseResponse>>(emptyList())
     val history: StateFlow<List<ExpenseResponse>> = _history.asStateFlow()
 
+    private val _groupBalance = MutableStateFlow<com.messmate.android.data.expense.GroupBalanceResponse?>(null)
+    val groupBalance: StateFlow<com.messmate.android.data.expense.GroupBalanceResponse?> = _groupBalance.asStateFlow()
+
+    // Current logged-in user id (from token manager via shared prefs stored at login)
+    private val _myUserId = MutableStateFlow<String?>(null)
+    val myUserId: StateFlow<String?> = _myUserId.asStateFlow()
+
     init {
         loadMembers()
         fetchExpenses()
+        fetchGroupBalances()
+        fetchMyUserId()
 
         // Listen for new expenses or member updates
         viewModelScope.launch {
             FcmEventBus.events.collect { type ->
                 if (type.equals("EXPENSE_UPDATE", ignoreCase = true)) {
                     fetchExpenses()
+                    fetchGroupBalances()
                 } else if (type.equals("ROLE_UPDATE", ignoreCase = true)) {
                     loadMembers()
                 }
             }
+        }
+    }
+
+    fun fetchGroupBalances() {
+        val messId = MessRepository.getMessId() ?: return
+        viewModelScope.launch {
+            try {
+                _groupBalance.value = ApiClient.apiService.getGroupBalances(messId)
+            } catch (e: Exception) { /* silent */ }
+        }
+    }
+
+    private fun fetchMyUserId() {
+        viewModelScope.launch {
+            try {
+                val me = ApiClient.apiService.getMyBalance(MessRepository.getMessId() ?: return@launch)
+                _myUserId.value = me.userId
+            } catch (e: Exception) { /* silent */ }
         }
     }
 

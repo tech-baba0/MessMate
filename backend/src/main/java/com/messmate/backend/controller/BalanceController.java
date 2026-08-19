@@ -29,4 +29,17 @@ public class BalanceController {
         }
         return ResponseEntity.badRequest().body(new MessageResponse(false, "User not authenticated"));
     }
+
+    @GetMapping("/group")
+    public ResponseEntity<?> getGroupBalances(@PathVariable String messId) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetailsImpl) {
+            try {
+                return ResponseEntity.ok(balanceService.getGroupBalances(messId));
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(new MessageResponse(false, e.getMessage()));
+            }
+        }
+        return ResponseEntity.badRequest().body(new MessageResponse(false, "User not authenticated"));
+    }
 }

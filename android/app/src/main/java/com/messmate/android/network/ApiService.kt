@@ -166,6 +166,14 @@ interface ApiService {
         @Query("monthYear") monthYear: String
     ): MonthlySettlementResponse
 
+    // ─── Balance ────────────────────────────────────────────────────────────────
+
+    @GET("messes/{messId}/balance/me")
+    suspend fun getMyBalance(@Path("messId") messId: String): com.messmate.android.data.expense.BalanceResponse
+
+    @GET("messes/{messId}/balance/group")
+    suspend fun getGroupBalances(@Path("messId") messId: String): com.messmate.android.data.expense.GroupBalanceResponse
+
     // ─── Notifications ────────────────────────────────────────────────────────
 
     @GET("notifications/status")

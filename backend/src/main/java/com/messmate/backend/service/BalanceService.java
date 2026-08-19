@@ -93,4 +93,91 @@ public class BalanceService {
                                 .balanceMessage(balanceMessage)
                                 .build();
         }
+
+        @Autowired
+        private com.messmate.backend.repository.MessMemberRepository messMemberRepository;
+
+        public com.messmate.backend.dto.response.GroupBalanceResponse getGroupBalances(String messId) {
+                // Get all active/approved members
+                List<com.messmate.backend.entity.MessMember> members = messMemberRepository.findByMessId(messId)
+                                .stream()
+                                .filter(m -> "ACTIVE".equals(m.getStatus()) || "APPROVED".equals(m.getStatus()))
+                                .collect(Collectors.toList());
+
+                List<BalanceResponse> allBalances = new java.util.ArrayList<>();
+                for (com.messmate.backend.entity.MessMember m : members) {
+                        try {
+                                allBalances.add(getBalanceForUser(messId, m.getUserId()));
+                        } catch (Exception e) {
+                        }
+                }
+
+                // Calculate settlements
+                List<BalanceResponse> debtors = allBalances.stream()
+                                .filter(b -> b.getNetBalance() < -0.01)
+                                .sorted(java.util.Comparator.comparing(BalanceResponse::getNetBalance)) // lowest first
+                                                                                                        // (most in
+                                                                                                        // debt)
+                                .collect(Collectors.toList());
+
+                List<BalanceResponse> creditors = allBalances.stream()
+                                .filter(b -> b.getNetBalance() > 0.01)
+                                .sorted((b1, b2) -> Double.compare(b2.getNetBalance(), b1.getNetBalance())) // highest
+                                                                                                            // first
+                                                                                                            // (most
+                                                                                                            // owed)
+                                .collect(Collectors.toList());
+
+                List<com.messmate.backend.dto.response.SuggestedReimbursement> reimbursements = new java.util.ArrayList<>();
+
+                int dIndex = 0;
+                int cIndex = 0;
+
+                // Working copies to mutate while settling
+                double[] debtAmts = debtors.stream().mapToDouble(b -> Math.abs(b.getNetBalance())).toArray();
+                double[] creditAmts = creditors.stream().mapToDouble(BalanceResponse::getNetBalance).toArray();
+
+                while (dIndex < debtors.size() && cIndex < creditors.size()) {
+                        double debt = debtAmts[dIndex];
+                        double credit = creditAmts[cIndex];
+
+                        if (debt < 0.01) {
+                                dIndex++;
+                                continue;
+                        }
+                        if (credit < 0.01) {
+                                cIndex++;
+                                continue;
+                        }
+
+                        double amountSettled = Math.min(debt, credit);
+
+                        BalanceResponse debtor = debtors.get(dIndex);
+                        BalanceResponse creditor = creditors.get(cIndex);
+
+                        reimbursements.add(com.messmate.backend.dto.response.SuggestedReimbursement.builder()
+                                        .fromUserId(debtor.getUserId())
+                                        .fromUserName(debtor.getName())
+                                        .toUserId(creditor.getUserId())
+                                        .toUserName(creditor.getName())
+                                        .amount(Math.round(amountSettled * 100.0) / 100.0)
+                                        .build());
+
+                        debtAmts[dIndex] -= amountSettled;
+                        creditAmts[cIndex] -= amountSettled;
+
+                        if (debtAmts[dIndex] < 0.01)
+                                dIndex++;
+                        if (creditAmts[cIndex] < 0.01)
+                                cIndex++;
+                }
+
+                // Sort balances: Highest owed first, then highest debt
+                allBalances.sort((b1, b2) -> Double.compare(b2.getNetBalance(), b1.getNetBalance()));
+
+                return com.messmate.backend.dto.response.GroupBalanceResponse.builder()
+                                .userBalances(allBalances)
+                                .suggestedReimbursements(reimbursements)
+                                .build();
+        }
 }
