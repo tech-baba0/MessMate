@@ -209,5 +209,22 @@ class AdminViewModel : ViewModel() {
                     }
                 }
         }
+        }
+    }
+
+    fun sendAnnouncement(title: String, message: String, targetUserId: String?, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        val messId = MessRepository.currentMessId.value ?: return
+        viewModelScope.launch {
+            try {
+                ApiClient.apiService.sendAnnouncement(
+                    messId,
+                    com.messmate.android.data.mess.AnnouncementRequest(title, message, targetUserId)
+                )
+                onSuccess()
+            } catch (e: Exception) {
+                onError("Failed to send announcement: ${e.localizedMessage}")
+            }
+        }
     }
 }
+

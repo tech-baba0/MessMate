@@ -58,6 +58,9 @@ interface ApiService {
     @PUT("messes/{messId}/members/{memberId}/reject")
     suspend fun rejectMember(@Path("messId") messId: String, @Path("memberId") memberId: String): MessMemberResponse
     
+    @POST("messes/{messId}/announcements")
+    suspend fun sendAnnouncement(@Path("messId") messId: String, @Body request: com.messmate.android.data.mess.AnnouncementRequest): Map<String, Any>
+
     @PUT("messes/{messId}/members/{memberId}/role")
     suspend fun changeMemberRole(@Path("messId") messId: String, @Path("memberId") memberId: String, @Query("role") role: String): MessMemberResponse
 

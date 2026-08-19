@@ -119,4 +119,21 @@ public class MessController {
         }
         return ResponseEntity.badRequest().body(new MessageResponse(false, "User not authenticated"));
     }
+
+    @PostMapping("/{messId}/announcements")
+    public ResponseEntity<?> sendAnnouncement(
+            @PathVariable String messId,
+            @RequestBody com.messmate.backend.dto.request.AnnouncementRequest request) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetailsImpl) {
+            String adminId = ((UserDetailsImpl) principal).getId();
+            try {
+                messService.sendAnnouncement(messId, adminId, request);
+                return ResponseEntity.ok(new MessageResponse(true, "Announcement sent successfully"));
+            } catch (RuntimeException e) {
+                return ResponseEntity.badRequest().body(new MessageResponse(false, e.getMessage()));
+            }
+        }
+        return ResponseEntity.badRequest().body(new MessageResponse(false, "User not authenticated"));
+    }
 }

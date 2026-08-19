@@ -80,10 +80,9 @@ fun AdminDashboardScreen(
                 }
                 is AdminState.Success -> {
                     val pendingMembers = s.members.filter { it.status == "PENDING" }
-                    val activeMembers = s.members.filter {
-                        it.status == "ACTIVE" || it.status == "APPROVED"
-                    }
+                    val activeMembers = s.members.filter { it.status == "APPROVED" }
                     var showDetailsDialog by remember { mutableStateOf(false) }
+                    var showAnnouncementDialog by remember { mutableStateOf(false) }
 
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -214,6 +213,11 @@ fun AdminDashboardScreen(
                                 QuickActionCard(icon = Icons.Default.AttachMoney, title = "Expenses", onClick = onNavigateToAdminExpense, modifier = Modifier.weight(1f))
                                 QuickActionCard(icon = Icons.Default.Receipt, title = "Bills", onClick = onNavigateToAdminBill, modifier = Modifier.weight(1f))
                             }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                QuickActionCard(icon = Icons.Default.Campaign, title = "Announce", onClick = { showAnnouncementDialog = true }, modifier = Modifier.weight(1f))
+                                Spacer(modifier = Modifier.weight(2f))
+                            }
                         }
 
                         // 3b. Notification health
@@ -254,6 +258,22 @@ fun AdminDashboardScreen(
                         DetailedLogsModal(
                             details = s.mealDashboard.memberDetails,
                             onDismiss = { showDetailsDialog = false }
+                        )
+                    }
+
+                    if (showAnnouncementDialog) {
+                        AnnouncementDialog(
+                            members = activeMembers,
+                            onDismiss = { showAnnouncementDialog = false },
+                            onSend = { title, msg, targetId ->
+                                viewModel.sendAnnouncement(
+                                    title = title,
+                                    message = msg,
+                                    targetUserId = targetId,
+                                    onSuccess = { showAnnouncementDialog = false },
+                                    onError = { /* To do context toast or error UI */ }
+                                )
+                            }
                         )
                     }
                 } // AdminState.Success
@@ -543,4 +563,107 @@ fun NotificationHealthCard(viewModel: AdminViewModel) {
             }
         }
     }
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun AnnouncementDialog(
+    members: List<com.messmate.android.data.mess.MessMemberResponse>,
+    onDismiss: () -> Unit,
+    onSend: (title: String, message: String, targetUserId: String?) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+    var selectedTarget by remember { mutableStateOf<com.messmate.android.data.mess.MessMemberResponse?>(null) } // null = All
+    var isSending by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = { if (!isSending) onDismiss() },
+        title = {
+            Text("Send Announcement", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Dropdown for target user
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = selectedTarget?.name ?: "All Active Members",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Send to") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("All Active Members") },
+                            onClick = {
+                                selectedTarget = null
+                                expanded = false
+                            }
+                        )
+                        members.forEach { m ->
+                            DropdownMenuItem(
+                                text = { Text("${m.name} (${m.role})") },
+                                onClick = {
+                                    selectedTarget = m
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Notification Title") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = message,
+                    onValueChange = { message = it },
+                    label = { Text("Message Body") },
+                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                    maxLines = 4
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    isSending = true
+                    onSend(
+                        title.ifBlank { "Announcement" },
+                        message,
+                        selectedTarget?.userId
+                    )
+                },
+                enabled = message.isNotBlank() && !isSending,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+            ) {
+                if (isSending) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
+                } else {
+                    Text("Send Push 🔔", color = Color.White)
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isSending) {
+                Text("Cancel", color = Color.Gray)
+            }
+        },
+        shape = RoundedCornerShape(16.dp)
+    )
 }

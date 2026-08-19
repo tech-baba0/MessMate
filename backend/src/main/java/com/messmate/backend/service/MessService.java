@@ -140,4 +140,44 @@ public class MessService {
             throw new RuntimeException("Invalid role. Must be ROLE_USER or ROLE_ADMIN");
         }
     }
+
+    @Autowired
+    private com.messmate.backend.service.FcmService fcmService;
+
+    public void sendAnnouncement(String messId, String adminId,
+            com.messmate.backend.dto.request.AnnouncementRequest request) {
+        // verify admin
+        MessMember admin = messMemberRepository.findByMessIdAndUserId(messId, adminId)
+                .orElseThrow(() -> new RuntimeException("You are not a member"));
+        if (admin.getRole() != Role.ROLE_ADMIN) {
+            throw new RuntimeException("Only admins can send announcements");
+        }
+
+        List<MessMember> targets = new java.util.ArrayList<>();
+
+        if (request.getTargetUserId() != null && !request.getTargetUserId().isBlank()) {
+            MessMember target = messMemberRepository.findByMessIdAndUserId(messId, request.getTargetUserId())
+                    .orElseThrow(() -> new RuntimeException("Target user is not in this mess"));
+            targets.add(target);
+        } else {
+            targets = messMemberRepository.findByMessId(messId).stream()
+                    .filter(m -> "ACTIVE".equals(m.getStatus()) || "APPROVED".equals(m.getStatus()))
+                    .collect(Collectors.toList());
+        }
+
+        int count = 0;
+        for (MessMember m : targets) {
+            if (m.getUserId().equals(adminId))
+                continue; // don't notify self
+            userRepository.findById(m.getUserId()).ifPresent(u -> {
+                if (u.getFcmToken() != null && !u.getFcmToken().isBlank()) {
+                    java.util.Map<String, String> data = new java.util.HashMap<>();
+                    data.put("type", "ANNOUNCEMENT");
+                    fcmService.sendPushNotificationWithData(u.getFcmToken(), request.getTitle(), request.getMessage(),
+                            data);
+                }
+            });
+            count++;
+        }
+    }
 }
