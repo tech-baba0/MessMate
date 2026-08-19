@@ -209,7 +209,6 @@ class AdminViewModel : ViewModel() {
                     }
                 }
         }
-        }
     }
 
     fun sendAnnouncement(title: String, message: String, targetUserId: String?, onSuccess: () -> Unit, onError: (String) -> Unit) {
@@ -227,4 +226,3 @@ class AdminViewModel : ViewModel() {
         }
     }
 }
-
