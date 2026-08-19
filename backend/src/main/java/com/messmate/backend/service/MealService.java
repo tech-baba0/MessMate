@@ -3,6 +3,7 @@ package com.messmate.backend.service;
 import com.messmate.backend.dto.request.MealToggleRequest;
 import com.messmate.backend.dto.response.AdminMealDashboardResponse;
 import com.messmate.backend.dto.response.MealHistorySummaryResponse;
+import com.messmate.backend.dto.response.MealReportEntry;
 import com.messmate.backend.dto.response.MealStatusResponse;
 import com.messmate.backend.dto.response.MealSelectionDashboardResponse;
 import com.messmate.backend.entity.MealEntry;
@@ -393,5 +394,35 @@ public class MealService {
                 .dinnerVotingStatus(dinnerStatus)
                 .memberDetails(detailedRecords)
                 .build();
+    }
+
+    public List<MealReportEntry> getMealReport(String messId, LocalDate startDate, LocalDate endDate) {
+        // Fetch all meal entries in range
+        List<MealEntry> entries = mealRepository.findByMessIdAndDateBetween(messId, startDate, endDate);
+
+        // Build userId -> name lookup
+        List<MessMember> members = messMemberRepository.findByMessId(messId).stream()
+                .filter(m -> "ACTIVE".equals(m.getStatus()) || "APPROVED".equals(m.getStatus()))
+                .collect(Collectors.toList());
+
+        Map<String, String> userNameMap = new java.util.HashMap<>();
+        for (MessMember m : members) {
+            userRepository.findById(m.getUserId()).ifPresent(u -> userNameMap.put(u.getId(), u.getName()));
+        }
+
+        return entries.stream()
+                .sorted(java.util.Comparator
+                        .comparing(MealEntry::getDate)
+                        .thenComparing(e -> userNameMap.getOrDefault(e.getUserId(), e.getUserId())))
+                .map(e -> MealReportEntry.builder()
+                        .userId(e.getUserId())
+                        .userName(userNameMap.getOrDefault(e.getUserId(), "Unknown"))
+                        .date(e.getDate() != null ? e.getDate().toString() : "")
+                        .lunch(e.getLunch())
+                        .dinner(e.getDinner())
+                        .mealUnits(e.getMealUnits())
+                        .updatedAt(e.getUpdatedTimestamp() != null ? e.getUpdatedTimestamp().toString() : "")
+                        .build())
+                .collect(Collectors.toList());
     }
 }

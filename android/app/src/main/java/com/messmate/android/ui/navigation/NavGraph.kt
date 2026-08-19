@@ -15,6 +15,7 @@ import com.messmate.android.ui.screens.admin.AdminDashboardScreen
 import com.messmate.android.ui.screens.admin.AdminMenuScreen
 import com.messmate.android.ui.screens.admin.AdminExpenseScreen
 import com.messmate.android.ui.screens.admin.AdminBillScreen
+import com.messmate.android.ui.screens.admin.AdminReportScreen
 import com.messmate.android.ui.screens.menu.MenuScreen
 import com.messmate.android.ui.screens.meal.MealHistoryScreen
 
@@ -96,6 +97,7 @@ fun MessMateNavGraph(
                 onNavigateToAdminMenu = { navController.navigate(Screen.AdminMenu.route) },
                 onNavigateToAdminExpense = { navController.navigate(Screen.AdminExpense.route) },
                 onNavigateToAdminBill = { navController.navigate(Screen.AdminBill.route) },
+                onNavigateToAdminReport = { navController.navigate(Screen.AdminReport.route) },
                 onLogout = {
                     com.messmate.android.network.ApiClient.tokenManager.clearToken()
                     navController.navigate(Screen.Login.route) {
@@ -120,6 +122,11 @@ fun MessMateNavGraph(
         }
         composable(Screen.Menu.route) {
             MenuScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.AdminReport.route) {
+            AdminReportScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

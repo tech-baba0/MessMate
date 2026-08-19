@@ -3,8 +3,6 @@ package com.messmate.android.network
 import com.messmate.android.data.auth.AuthResponse
 import com.messmate.android.data.auth.LoginRequest
 import com.messmate.android.data.auth.SignupRequest
-import com.messmate.android.data.balance.BalanceResponse
-import com.messmate.android.data.mess.MessResponse
 import com.messmate.android.data.mess.MessMembershipResponse
 import com.messmate.android.data.mess.JoinMessRequest
 import com.messmate.android.data.mess.MessMemberResponse
@@ -19,6 +17,8 @@ import com.messmate.android.data.menu.Menu
 import com.messmate.android.data.menu.MenuRequest
 import com.messmate.android.data.expense.ExpenseRequest
 import com.messmate.android.data.expense.ExpenseResponse
+import com.messmate.android.data.expense.BalanceResponse
+import com.messmate.android.data.expense.GroupBalanceResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -41,14 +41,13 @@ interface ApiService {
     @PUT("auth/me/fcm-token")
     suspend fun updateFcmToken(@Body request: com.messmate.android.data.auth.FcmTokenRequest)
 
-
     @GET("messes/my")
     suspend fun getMyMesses(): List<MessMembershipResponse>
 
     @POST("messes/join")
     suspend fun joinMess(@Body request: JoinMessRequest): MessMembershipResponse
     
-    // Admin Endpoints
+    // ─── Member / Admin Endpoints ──────────────────────────────────────────────
     @GET("messes/{messId}/members")
     suspend fun getMessMembers(@Path("messId") messId: String): List<MessMemberResponse>
 
@@ -64,9 +63,7 @@ interface ApiService {
     @PUT("messes/{messId}/members/{memberId}/role")
     suspend fun changeMemberRole(@Path("messId") messId: String, @Path("memberId") memberId: String, @Query("role") role: String): MessMemberResponse
 
-    @GET("messes/{messId}/balance/me")
-    suspend fun getMyBalance(@Path("messId") messId: String): BalanceResponse
-
+    // ─── Meals ──────────────────────────────────────────────────────────────────
     @GET("messes/{messId}/meals/today")
     suspend fun getTodayMealStatus(@Path("messId") messId: String): MealStatusResponse
 
@@ -94,88 +91,61 @@ interface ApiService {
         @Query("date") date: String? = null
     ): AdminMealDashboardResponse
 
+    // ─── Menu ───────────────────────────────────────────────────────────────────
     @GET("messes/{messId}/menus/today")
-    suspend fun getTodayMenu(
-        @Path("messId") messId: String
-    ): Menu
+    suspend fun getTodayMenu(@Path("messId") messId: String): Menu
 
     @GET("messes/{messId}/menus")
-    suspend fun getPublishedMenus(
-        @Path("messId") messId: String
-    ): List<Menu>
+    suspend fun getPublishedMenus(@Path("messId") messId: String): List<Menu>
 
     @GET("admin/messes/{messId}/menus")
-    suspend fun getAllMenusAdmin(
-        @Path("messId") messId: String
-    ): List<Menu>
+    suspend fun getAllMenusAdmin(@Path("messId") messId: String): List<Menu>
 
     @POST("admin/messes/{messId}/menus")
-    suspend fun upsertMenu(
-        @Path("messId") messId: String,
-        @Body request: MenuRequest
-    )
+    suspend fun upsertMenu(@Path("messId") messId: String, @Body request: MenuRequest)
 
+    // ─── Expenses ───────────────────────────────────────────────────────────────
     @POST("messes/{messId}/expenses")
-    suspend fun addExpense(
-        @Path("messId") messId: String,
-        @Body request: ExpenseRequest
-    ): ExpenseResponse
+    suspend fun addExpense(@Path("messId") messId: String, @Body request: ExpenseRequest): ExpenseResponse
 
     @POST("messes/{messId}/expenses/calculate-split")
-    suspend fun calculateSplit(
-        @Path("messId") messId: String,
-        @Body request: ExpenseRequest
-    ): List<com.messmate.android.data.expense.ExpenseShare>
+    suspend fun calculateSplit(@Path("messId") messId: String, @Body request: ExpenseRequest): List<com.messmate.android.data.expense.ExpenseShare>
 
     @GET("messes/{messId}/expenses")
-    suspend fun getAllExpenses(
-        @Path("messId") messId: String
-    ): List<ExpenseResponse>
+    suspend fun getAllExpenses(@Path("messId") messId: String): List<ExpenseResponse>
 
     @PUT("messes/{messId}/expenses/{expenseId}")
-    suspend fun updateExpense(
-        @Path("messId") messId: String,
-        @Path("expenseId") expenseId: String,
-        @Body request: ExpenseRequest
-    ): ExpenseResponse
+    suspend fun updateExpense(@Path("messId") messId: String, @Path("expenseId") expenseId: String, @Body request: ExpenseRequest): ExpenseResponse
 
     @DELETE("messes/{messId}/expenses/{expenseId}")
-    suspend fun cancelExpense(
-        @Path("messId") messId: String,
-        @Path("expenseId") expenseId: String
-    )
-    
-    // Settlement Endpoints
+    suspend fun cancelExpense(@Path("messId") messId: String, @Path("expenseId") expenseId: String)
+
+    // ─── Settlements ────────────────────────────────────────────────────────────
     @POST("messes/{messId}/settlements/generate")
-    suspend fun generateSettlement(
-        @Path("messId") messId: String,
-        @Query("monthYear") monthYear: String
-    ): MonthlySettlementResponse
+    suspend fun generateSettlement(@Path("messId") messId: String, @Query("monthYear") monthYear: String): MonthlySettlementResponse
     
     @POST("messes/{messId}/settlements/{id}/close")
-    suspend fun closeSettlement(
-        @Path("messId") messId: String,
-        @Path("id") id: String,
-        @Query("monthYear") monthYear: String
-    ): MonthlySettlementResponse
+    suspend fun closeSettlement(@Path("messId") messId: String, @Path("id") id: String, @Query("monthYear") monthYear: String): MonthlySettlementResponse
     
     @POST("messes/{messId}/settlements/{id}/reopen")
-    suspend fun reopenSettlement(
-        @Path("messId") messId: String,
-        @Path("id") id: String,
-        @Query("monthYear") monthYear: String
-    ): MonthlySettlementResponse
+    suspend fun reopenSettlement(@Path("messId") messId: String, @Path("id") id: String, @Query("monthYear") monthYear: String): MonthlySettlementResponse
 
     // ─── Balance ────────────────────────────────────────────────────────────────
-
     @GET("messes/{messId}/balance/me")
-    suspend fun getMyBalance(@Path("messId") messId: String): com.messmate.android.data.expense.BalanceResponse
+    suspend fun getMyBalance(@Path("messId") messId: String): BalanceResponse
 
     @GET("messes/{messId}/balance/group")
-    suspend fun getGroupBalances(@Path("messId") messId: String): com.messmate.android.data.expense.GroupBalanceResponse
+    suspend fun getGroupBalances(@Path("messId") messId: String): GroupBalanceResponse
+
+    // ─── Reports ─────────────────────────────────────────────────────────────
+    @GET("messes/{messId}/meals/admin/report")
+    suspend fun getMealReport(
+        @Path("messId") messId: String,
+        @Query("startDate") startDate: String,
+        @Query("endDate") endDate: String
+    ): List<com.messmate.android.data.meal.MealReportEntry>
 
     // ─── Notifications ────────────────────────────────────────────────────────
-
     @GET("notifications/status")
     suspend fun getFcmStatus(): Map<String, Any>
 

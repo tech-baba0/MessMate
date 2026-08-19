@@ -32,6 +32,7 @@ fun AdminDashboardScreen(
     onNavigateToAdminMenu: () -> Unit,
     onNavigateToAdminExpense: () -> Unit,
     onNavigateToAdminBill: () -> Unit,
+    onNavigateToAdminReport: () -> Unit = {},
     onLogout: () -> Unit,
     viewModel: AdminViewModel = viewModel()
 ) {
@@ -218,7 +219,8 @@ fun AdminDashboardScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 QuickActionCard(icon = Icons.Default.Campaign, title = "Announce", onClick = { showAnnouncementDialog = true }, modifier = Modifier.weight(1f))
-                                Spacer(modifier = Modifier.weight(2f))
+                                QuickActionCard(icon = Icons.Default.Assessment, title = "Reports", onClick = onNavigateToAdminReport, modifier = Modifier.weight(1f))
+                                Spacer(modifier = Modifier.weight(1f))
                             }
                         }
 

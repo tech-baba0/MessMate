@@ -2,7 +2,7 @@ package com.messmate.android.ui.screens.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.messmate.android.data.balance.BalanceResponse
+import com.messmate.android.data.expense.BalanceResponse
 import com.messmate.android.network.ApiClient
 import com.messmate.android.data.mess.MessRepository
 import com.messmate.android.data.menu.Menu

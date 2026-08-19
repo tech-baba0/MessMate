@@ -94,7 +94,8 @@ class BazarViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val list = ApiClient.apiService.getMessMembers(messId)
-                _members.value = list.filter { it.status != "PENDING" && it.role == "ROLE_USER" }
+                // Include all active/approved members (users AND admins) for split/paid-by selections
+                _members.value = list.filter { it.status == "ACTIVE" || it.status == "APPROVED" }
             } catch (e: Exception) {
                 // Ignore
             }

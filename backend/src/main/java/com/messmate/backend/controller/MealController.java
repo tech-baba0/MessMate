@@ -92,4 +92,17 @@ public class MealController {
         LocalDate targetDate = (date != null) ? date : LocalDate.now(java.time.ZoneId.of("Asia/Kolkata"));
         return ResponseEntity.ok(mealService.getAdminMealDashboard(messId, targetDate));
     }
+
+    @PreAuthorize("@messSecurity.isAdmin(authentication, #messId)")
+    @GetMapping("/admin/report")
+    public ResponseEntity<?> getMealReport(
+            @PathVariable String messId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        try {
+            return ResponseEntity.ok(mealService.getMealReport(messId, startDate, endDate));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse(false, e.getMessage()));
+        }
+    }
 }
